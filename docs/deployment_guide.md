@@ -22,3 +22,5 @@ The follow screenshots shows how simple this step is:
 2. ![alt text](../images/amplify-console-02.png)
 
 3. ![alt text](../images/amplify-console-03.png)
+
+4. ![alt text](../images/amplify-console-04.png)

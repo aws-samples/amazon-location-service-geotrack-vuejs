@@ -22,7 +22,16 @@ This repo contains a Vue.js application that displays the users last positions r
 
 <img src="./images/home.png"  width="800"/>
 
-<img src="./images/map.png"  width="800"/>
+<img src="./images/map.png"  width="500"/>
+
+## Testing the solution
+
+If you clone this repo, at the root directory you can use the sendTrackingRecords.sh script to sends 4 location data points using the current time from NY Central Park to the Amazon Location Service Tracker. The only parameter that you need to provide is the deviceId.
+
+```bash
+./sendTrackingRecords.sh 1111111
+Updating Device 1111111 at LGN -73.9687025 LAT 40.7812239 at 2021-05-12T16:30:04Z
+```
 
 # Deployment
 To deploy this solution into your AWS Account please follow our [Deployment Guide](./docs/deployment_guide.md)
