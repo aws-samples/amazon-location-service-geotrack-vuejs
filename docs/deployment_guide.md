@@ -8,7 +8,7 @@ Before you deploy, you must have the following in place:
 
 # Step 1: Front-end deployment
 
-The **Deploy to Amplify Console** button will take you to your AWS console to deploy the front-end solution. Make sure you are connecting to the same AWS Account you deployed the backend solutio.
+The **Deploy to Amplify Console** button will take you to your AWS console to deploy the front-end solution.
 
 <a href="https://console.aws.amazon.com/amplify/home#/deploy?repo=https://github.com/aws-samples/amazon-location-service-geotrack-vuejs">
     <img src="https://oneclick.amplifyapp.com/button.svg" alt="Deploy to Amplify Console">
@@ -24,3 +24,8 @@ The follow screenshots shows how simple this step is:
 3. ![alt text](../images/amplify-console-03.png)
 
 4. ![alt text](../images/amplify-console-04.png)
+
+# Step 2: Back-end deployment
+
+In this step we create the IoT Core and associate it to the AWS Lambda function, so it can send the GPS coordinates to Amazon Location Service Tracker.
+

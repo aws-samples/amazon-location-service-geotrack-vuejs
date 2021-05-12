@@ -98,7 +98,7 @@ export default {
         const user = await Auth.signIn(username, password);
         console.log(user.username)
         AmplifyEventBus.$emit("authState", "signedIn");
-        this.$router.push("/home");
+        this.$router.push("/");
       } catch (error) {
         this.loginError = error.message
         this.hasLoginError = true;
