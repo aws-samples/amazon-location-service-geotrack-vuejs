@@ -1,0 +1,21 @@
+type User @model 
+@auth(rules: [
+  { allow:  private, provider: iam },
+  { allow:  private, provider: userPools }, 
+  { allow: owner }
+]){
+  id: ID!
+  fullName: String!
+  device: Device @connection
+}
+
+type Device @model 
+@auth(rules: [
+  { allow:  private, provider: iam }, 
+  { allow:  private, provider: userPools }, 
+  { allow: owner }
+]){
+  id: ID!
+  userID: ID
+  deviceType: String
+}
