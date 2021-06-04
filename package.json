@@ -13,7 +13,7 @@
     "aws-amplify-vue": "^2.1.5",
     "aws-sdk": "^2.903.0",
     "core-js": "^3.6.5",
-    "maplibre-gl": "^1.14.0",
+    "maplibre-gl": ">=1.14.0",
     "quasar": "^1.0.0",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
