@@ -58,7 +58,7 @@
 
         <q-card-section class="q-pt-none">
           <q-input
-            label="First Name"
+            label="Full Name"
             hint="Name"
             v-model="fullName"
             autofocus
