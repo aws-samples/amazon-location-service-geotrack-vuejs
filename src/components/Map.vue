@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import maplibre from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import { Auth } from "aws-amplify";
 import awsconfig from '../aws-exports'
 import { Signer } from "@aws-amplify/core";
@@ -81,27 +81,27 @@ export default {
     async initMap() {
 
       if (this.positions && this.positions.length != 0) {
-        this.center = new maplibre.LngLat(this.positions[0].Position[0], this.positions[0].Position[1])
+        this.center = new maplibregl.LngLat(this.positions[0].Position[0], this.positions[0].Position[1])
         this.zoom = 12               
       }
       else {
-        this.center = new maplibre.LngLat(0,0)
+        this.center = new maplibregl.LngLat(0,0)
         this.zoom = 2
       }
   
-      let map = new maplibre.Map({
+      let map = new maplibregl.Map({
             container: "markmap",
            //Specify the centre of the map when it gets rendered
             center: this.center, 
             zoom: this.zoom, //Adjust the zoom level
-            style: process.env.VUE_APP_MAP_NAME,
+            style: "appMap",
             transformRequest: this.transformRequest
         });
         //Zoom in and out button
-        map.addControl(new maplibre.NavigationControl(), "top-left"); 
+        map.addControl(new maplibregl.NavigationControl(), "top-left"); 
         //A button that allows the map to fly to user’s current location when pressed
         map.addControl(
-            new maplibre.GeolocateControl({
+            new maplibregl.GeolocateControl({
                 positionOptions: {
                     enableHighAccuracy: true
                 },
@@ -110,9 +110,9 @@ export default {
         );
         if (this.positions) {
           for (let i = 0; i < this.positions.length; i++) {
-              new maplibre.Marker()
+              new maplibregl.Marker()
                 .setLngLat(this.positions[i].Position)
-                .setPopup(new maplibre.Popup().setHTML(this.positions[i].ReceivedTime)) // add popup
+                .setPopup(new maplibregl.Popup().setHTML(this.positions[i].ReceivedTime)) // add popup
                 .addTo(map);
           }
         }
