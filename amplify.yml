@@ -11,11 +11,11 @@ backend:
         - export AWSACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
         - export PROJECT_NAME=$(cat ./amplify/.config/project-config.json | jq -r '.projectName')
         - export VUE_APP_MAP_NAME=$(aws location list-maps --query 'Entries[*].[MapName]' --output text | grep -i -m1 ${PROJECT_NAME})
-        - if [ -z "$VUE_APP_MAP_NAME" ]; then aws location create-map --map-name ${PROJECT_NAME}-map --configuration "Style=VectorEsriTopographic" --pricing-plan "RequestBasedUsage"; fi
+        - if [ -z "$VUE_APP_MAP_NAME" ]; then aws location create-map --map-name ${PROJECT_NAME}.map --configuration "Style=VectorEsriTopographic" --pricing-plan "RequestBasedUsage"; fi
         - export VUE_APP_TRACKER_NAME=$(aws location list-trackers --query 'Entries[*].[TrackerName]' --output text | grep -i -m1 ${PROJECT_NAME})
-        - if [ -z "$VUE_APP_TRACKER_NAME" ]; then aws location create-tracker --tracker-name ${PROJECT_NAME}-tracker --pricing-plan "RequestBasedUsage"; fi
-        - echo "VUE_APP_MAP_NAME=${PROJECT_NAME}-map" >> .env
-        - echo "VUE_APP_TRACKER_NAME=${PROJECT_NAME}-tracker" >> .env
+        - if [ -z "$VUE_APP_TRACKER_NAME" ]; then aws location create-tracker --tracker-name ${PROJECT_NAME}.tracker --pricing-plan "RequestBasedUsage"; fi
+        - echo "VUE_APP_MAP_NAME=${PROJECT_NAME}.map" >> .env
+        - echo "VUE_APP_TRACKER_NAME=${PROJECT_NAME}.tracker" >> .env
         - export S3AMPLIFY=$(aws resourcegroupstaggingapi get-resources --tag-filters Key=user:Application,Values=${PROJECT_NAME} --resource-type-filters s3 --query 'ResourceTagMappingList[*].[ResourceARN]' --output text | grep -i deployment | cut -c14-)
         - export AMPLIFYROLENAME=${S3AMPLIFY/deployment/authRole}
         - export LOCATION_POLICY=$(aws iam list-policies --query "Policies[*].[PolicyName]" --scope Local --output text | grep -i ${PROJECT_NAME}-location)
