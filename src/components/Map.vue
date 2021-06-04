@@ -60,7 +60,7 @@ export default {
 
         var params = {
           DeviceId: vm.row.deviceId,
-          TrackerName: process.env.VUE_APP_TRACKER_NAME,
+          TrackerName: process.env.VUE_APP_TRACKER,
           EndTimeExclusive: new Date(),
           StartTimeInclusive: now15minbefore
         };
@@ -94,7 +94,7 @@ export default {
            //Specify the centre of the map when it gets rendered
             center: this.center, 
             zoom: this.zoom, //Adjust the zoom level
-            style: "appMap",
+            style: process.env.VUE_APP_MAP,
             transformRequest: this.transformRequest
         });
         //Zoom in and out button
