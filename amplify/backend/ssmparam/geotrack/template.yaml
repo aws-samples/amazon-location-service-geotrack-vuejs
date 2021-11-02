@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  env:
+    Type: String
+  ProjectName:
+    Type: String
+    Default: NONE
+    Description: A description to identify project
+  AuthCognitoUserPoolId:
+    Type: String
+    Description: The id of an existing User Pool to connect. If this is changed, a user pool will not be created for you.
+    Default: NONE
+  GraphQLAPIEndpoint:
+    Type: String
+    Description: The GraphQL URL.
+    Default: NONE
+
+Resources:
+  AppsyncUrlKey:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/amplify/${ProjectName}/${env}/appsyncUrl"
+      Type: "String"
+      Value: !Ref GraphQLAPIEndpoint
+
+  CognitoIdKey:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub "/amplify/${ProjectName}/${env}/cognitoPoolId"
+      Type: "String"
+      Value: !Ref AuthCognitoUserPoolId

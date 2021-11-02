@@ -1,17 +1,18 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
-export const getUser = /* GraphQL */ `
-  query GetUser($id: ID!) {
-    getUser(id: $id) {
+export const getDeliveryAgent = /* GraphQL */ `
+  query GetDeliveryAgent($id: ID!) {
+    getDeliveryAgent(id: $id) {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -20,22 +21,23 @@ export const getUser = /* GraphQL */ `
     }
   }
 `;
-export const listUsers = /* GraphQL */ `
-  query ListUsers(
-    $filter: ModelUserFilterInput
+export const listDeliveryAgents = /* GraphQL */ `
+  query ListDeliveryAgents(
+    $filter: ModelDeliveryAgentFilterInput
     $limit: Int
     $nextToken: String
   ) {
-    listUsers(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    listDeliveryAgents(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         id
         fullName
+        deliveryType
         createdAt
         updatedAt
         owner
         device {
           id
-          userID
+          deliveryAgentId
           deviceType
           createdAt
           updatedAt
@@ -43,6 +45,18 @@ export const listUsers = /* GraphQL */ `
         }
       }
       nextToken
+    }
+  }
+`;
+export const getDevice = /* GraphQL */ `
+  query GetDevice($id: ID!) {
+    getDevice(id: $id) {
+      id
+      deliveryAgentId
+      deviceType
+      createdAt
+      updatedAt
+      owner
     }
   }
 `;
@@ -55,7 +69,7 @@ export const listDevices = /* GraphQL */ `
     listDevices(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -65,15 +79,82 @@ export const listDevices = /* GraphQL */ `
     }
   }
 `;
-export const getDevice = /* GraphQL */ `
-  query GetDevice($id: ID!) {
-    getDevice(id: $id) {
+export const getDeliveryInfo = /* GraphQL */ `
+  query GetDeliveryInfo($id: ID!) {
+    getDeliveryInfo(id: $id) {
       id
-      userID
-      deviceType
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
       createdAt
       updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
       owner
+    }
+  }
+`;
+export const listDeliveryInfos = /* GraphQL */ `
+  query ListDeliveryInfos(
+    $filter: ModelDeliveryInfoFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listDeliveryInfos(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        geoStart {
+          lat
+          lng
+        }
+        geoEnd {
+          lat
+          lng
+        }
+        duration
+        distance
+        geoFenceId
+        userPhone
+        expireAt
+        status
+        createdAt
+        updatedAt
+        deliveryAgent {
+          id
+          fullName
+          deliveryType
+          createdAt
+          updatedAt
+          owner
+        }
+        owner
+      }
+      nextToken
     }
   }
 `;

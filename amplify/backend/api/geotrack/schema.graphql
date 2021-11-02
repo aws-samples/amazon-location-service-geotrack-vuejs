@@ -1,4 +1,4 @@
-type User @model 
+type DeliveryAgent @model 
 @auth(rules: [
   { allow:  private, provider: iam },
   { allow:  private, provider: userPools }, 
@@ -6,7 +6,8 @@ type User @model
 ]){
   id: ID!
   fullName: String!
-  device: Device @connection
+  deliveryType: String!
+  device: Device @connection 
 }
 
 type Device @model 
@@ -16,6 +17,31 @@ type Device @model
   { allow: owner }
 ]){
   id: ID!
-  userID: ID
+  deliveryAgentId: ID
   deviceType: String
+}
+
+type DeliveryInfo @model
+@auth(rules: [
+  { allow:  private, provider: iam }, 
+  { allow:  private, provider: userPools }, 
+  { allow: owner }
+]){
+  id: ID!
+  deliveryAgent: DeliveryAgent @connection
+  geoStart: Coordinate
+  geoEnd: Coordinate
+  duration: Float!
+  distance: Float!
+  geoFenceId: ID
+  userPhone: String
+  expireAt: Float!
+  status: String!
+}
+
+type Coordinate
+@aws_cognito_user_pools
+{
+  lat: Float!
+  lng: Float!
 }

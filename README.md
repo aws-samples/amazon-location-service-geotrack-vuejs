@@ -8,7 +8,7 @@ This repo contains a Vue.js application that displays the users last positions r
 
 ## Architecture Overview
 
-<img src="./images/architecture.png"  width="800"/>
+<img src="./images/architecture.jpg"  width="800"/>
 
 ## Stack
 
@@ -20,18 +20,18 @@ This repo contains a Vue.js application that displays the users last positions r
 
 ## User Interface
 
-<img src="./images/home.png"  width="800"/>
+#### Real-time tracking visualization
+<img src="./images/geotrack-home.png"  width="800"/>
 
-<img src="./images/map.png"  width="500"/>
+#### Managering Delivery Agents
+<img src="./images/geotrack-agent.png"  width="500"/>
+
+#### Managing Delivery Routes
+<img src="./images/geotrack-delivery.png"  width="800"/>
 
 ## Testing the solution
 
-If you clone this repo, at the root directory you can use the sendTrackingRecords.sh script to sends 4 location data points using the current time from NY Central Park to the Amazon Location Service Tracker. The only parameter that you need to provide is the deviceId.
-
-```bash
-./sendTrackingRecords.sh 1111111
-Updating Device 1111111 at LGN -73.9687025 LAT 40.7812239 at 2021-05-12T16:30:04Z
-```
+At the toolbar there is a fire icon button. Upon clicking this button, the application will simulate the existent delivery routes. An AWS Lambda reads the start and end positions of each delivery route, calculates the route and sends IoT messages with the IoT devices associated to the delivery agents reporting their geo-location over time. The application does not prevent having two routes with the same IoT device, which will produce inconsistent position.
 
 # Deployment
 To deploy this solution into your AWS Account please follow our [Deployment Guide](./docs/deployment_guide.md)

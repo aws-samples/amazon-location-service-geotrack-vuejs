@@ -1,17 +1,18 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
-export const onCreateUser = /* GraphQL */ `
-  subscription OnCreateUser {
-    onCreateUser {
+export const onCreateDeliveryAgent = /* GraphQL */ `
+  subscription OnCreateDeliveryAgent {
+    onCreateDeliveryAgent {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -20,17 +21,18 @@ export const onCreateUser = /* GraphQL */ `
     }
   }
 `;
-export const onUpdateUser = /* GraphQL */ `
-  subscription OnUpdateUser {
-    onUpdateUser {
+export const onUpdateDeliveryAgent = /* GraphQL */ `
+  subscription OnUpdateDeliveryAgent {
+    onUpdateDeliveryAgent {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -39,17 +41,18 @@ export const onUpdateUser = /* GraphQL */ `
     }
   }
 `;
-export const onDeleteUser = /* GraphQL */ `
-  subscription OnDeleteUser {
-    onDeleteUser {
+export const onDeleteDeliveryAgent = /* GraphQL */ `
+  subscription OnDeleteDeliveryAgent {
+    onDeleteDeliveryAgent {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -62,7 +65,7 @@ export const onCreateDevice = /* GraphQL */ `
   subscription OnCreateDevice {
     onCreateDevice {
       id
-      userID
+      deliveryAgentId
       deviceType
       createdAt
       updatedAt
@@ -74,7 +77,7 @@ export const onUpdateDevice = /* GraphQL */ `
   subscription OnUpdateDevice {
     onUpdateDevice {
       id
-      userID
+      deliveryAgentId
       deviceType
       createdAt
       updatedAt
@@ -86,10 +89,130 @@ export const onDeleteDevice = /* GraphQL */ `
   subscription OnDeleteDevice {
     onDeleteDevice {
       id
-      userID
+      deliveryAgentId
       deviceType
       createdAt
       updatedAt
+      owner
+    }
+  }
+`;
+export const onCreateDeliveryInfo = /* GraphQL */ `
+  subscription OnCreateDeliveryInfo {
+    onCreateDeliveryInfo {
+      id
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
+      createdAt
+      updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
+      owner
+    }
+  }
+`;
+export const onUpdateDeliveryInfo = /* GraphQL */ `
+  subscription OnUpdateDeliveryInfo {
+    onUpdateDeliveryInfo {
+      id
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
+      createdAt
+      updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
+      owner
+    }
+  }
+`;
+export const onDeleteDeliveryInfo = /* GraphQL */ `
+  subscription OnDeleteDeliveryInfo {
+    onDeleteDeliveryInfo {
+      id
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
+      createdAt
+      updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
       owner
     }
   }

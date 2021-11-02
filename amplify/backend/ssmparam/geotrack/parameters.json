@@ -1,0 +1,15 @@
+{
+    "ProjectName": "geotrack",
+    "AuthCognitoUserPoolId": {
+        "Fn::GetAtt": [
+            "authgeotrack6cb2c7266cb2c726",
+            "Outputs.UserPoolId"
+        ]
+    },
+    "GraphQLAPIEndpoint": {
+        "Fn::GetAtt": [
+            "apigeotrack",
+            "Outputs.GraphQLAPIEndpointOutput"
+        ]
+    }
+}

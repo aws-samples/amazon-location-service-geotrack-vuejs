@@ -1,20 +1,21 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
-export const createUser = /* GraphQL */ `
-  mutation CreateUser(
-    $input: CreateUserInput!
-    $condition: ModelUserConditionInput
+export const createDeliveryAgent = /* GraphQL */ `
+  mutation CreateDeliveryAgent(
+    $input: CreateDeliveryAgentInput!
+    $condition: ModelDeliveryAgentConditionInput
   ) {
-    createUser(input: $input, condition: $condition) {
+    createDeliveryAgent(input: $input, condition: $condition) {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -23,20 +24,21 @@ export const createUser = /* GraphQL */ `
     }
   }
 `;
-export const updateUser = /* GraphQL */ `
-  mutation UpdateUser(
-    $input: UpdateUserInput!
-    $condition: ModelUserConditionInput
+export const updateDeliveryAgent = /* GraphQL */ `
+  mutation UpdateDeliveryAgent(
+    $input: UpdateDeliveryAgentInput!
+    $condition: ModelDeliveryAgentConditionInput
   ) {
-    updateUser(input: $input, condition: $condition) {
+    updateDeliveryAgent(input: $input, condition: $condition) {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -45,20 +47,21 @@ export const updateUser = /* GraphQL */ `
     }
   }
 `;
-export const deleteUser = /* GraphQL */ `
-  mutation DeleteUser(
-    $input: DeleteUserInput!
-    $condition: ModelUserConditionInput
+export const deleteDeliveryAgent = /* GraphQL */ `
+  mutation DeleteDeliveryAgent(
+    $input: DeleteDeliveryAgentInput!
+    $condition: ModelDeliveryAgentConditionInput
   ) {
-    deleteUser(input: $input, condition: $condition) {
+    deleteDeliveryAgent(input: $input, condition: $condition) {
       id
       fullName
+      deliveryType
       createdAt
       updatedAt
       owner
       device {
         id
-        userID
+        deliveryAgentId
         deviceType
         createdAt
         updatedAt
@@ -74,7 +77,7 @@ export const createDevice = /* GraphQL */ `
   ) {
     createDevice(input: $input, condition: $condition) {
       id
-      userID
+      deliveryAgentId
       deviceType
       createdAt
       updatedAt
@@ -89,7 +92,7 @@ export const updateDevice = /* GraphQL */ `
   ) {
     updateDevice(input: $input, condition: $condition) {
       id
-      userID
+      deliveryAgentId
       deviceType
       createdAt
       updatedAt
@@ -104,10 +107,139 @@ export const deleteDevice = /* GraphQL */ `
   ) {
     deleteDevice(input: $input, condition: $condition) {
       id
-      userID
+      deliveryAgentId
       deviceType
       createdAt
       updatedAt
+      owner
+    }
+  }
+`;
+export const createDeliveryInfo = /* GraphQL */ `
+  mutation CreateDeliveryInfo(
+    $input: CreateDeliveryInfoInput!
+    $condition: ModelDeliveryInfoConditionInput
+  ) {
+    createDeliveryInfo(input: $input, condition: $condition) {
+      id
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
+      createdAt
+      updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
+      owner
+    }
+  }
+`;
+export const updateDeliveryInfo = /* GraphQL */ `
+  mutation UpdateDeliveryInfo(
+    $input: UpdateDeliveryInfoInput!
+    $condition: ModelDeliveryInfoConditionInput
+  ) {
+    updateDeliveryInfo(input: $input, condition: $condition) {
+      id
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
+      createdAt
+      updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
+      owner
+    }
+  }
+`;
+export const deleteDeliveryInfo = /* GraphQL */ `
+  mutation DeleteDeliveryInfo(
+    $input: DeleteDeliveryInfoInput!
+    $condition: ModelDeliveryInfoConditionInput
+  ) {
+    deleteDeliveryInfo(input: $input, condition: $condition) {
+      id
+      geoStart {
+        lat
+        lng
+      }
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      geoFenceId
+      userPhone
+      expireAt
+      status
+      createdAt
+      updatedAt
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        createdAt
+        updatedAt
+        owner
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+      }
       owner
     }
   }

@@ -1,0 +1,274 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    "GeoTrack Application \n"
+Globals:
+  Function:
+    AutoPublishAlias: live
+    Handler: index.handler
+    MemorySize: 256
+    Runtime: python3.8
+    Timeout: 120
+    Tracing: Active    
+  
+Parameters:
+  ProjectName:
+    Type: String
+    Default: geotrack
+    Description: A description to identify project
+  EnvironmentName:
+    Type: String
+    Default: dev
+    Description: A description to identify environment (e.g. dev, prod)
+  CorsOrigin:
+    Type: String
+    Default: "'*'"
+  CorsHeaders:
+    Type: String
+    Default: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+  CorsMethods:
+    Type: String
+    Default: "'OPTIONS,POST'"
+
+Resources:
+  CoreLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${ProjectName}-${EnvironmentName}-corelayer"
+      Description: requests 
+      ContentUri: ./layer/layer.zip
+      CompatibleRuntimes:
+        - python3.8
+        - python3.7
+        - python3.6
+      RetentionPolicy: Delete
+
+  LaunchDeliveryFleetProxyResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}'
+      ParentId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiParentId:1}}'
+      PathPart: 'launch_fleet'
+
+  LaunchDeliveryFleetProxyMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}'
+      ResourceId: !Ref LaunchDeliveryFleetProxyResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiAuthId:1}}'
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub >-
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LaunchDeliveryFleet.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: $input.json('$')
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: !Ref CorsHeaders
+              method.response.header.Access-Control-Allow-Methods: !Ref CorsMethods
+              method.response.header.Access-Control-Allow-Origin: !Ref CorsOrigin
+        RequestTemplates:
+          application/json: $input.json('$')
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+  
+  
+  LaunchDeliveryFleetOptionMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}'
+      ResourceId: !Ref LaunchDeliveryFleetProxyResource
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: !Ref CorsHeaders
+              method.response.header.Access-Control-Allow-Methods: !Ref CorsMethods
+              method.response.header.Access-Control-Allow-Origin: !Ref CorsOrigin
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: 'Empty'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+          StatusCode: '200'
+      
+  LaunchDeliveryFleetInvokePermissions:
+    Type: "AWS::Lambda::Permission"
+    Properties: 
+      Action: "lambda:InvokeFunction"        
+      FunctionName: !GetAtt LaunchDeliveryFleet.Arn
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Join [ "", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}', "/*/*/*" ] ] 
+
+  LaunchDeliveryFleet:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-LaunchDeliveryFleet"
+      CodeUri: ./lambdas/simulation/launchDeliveryFleet  
+      Layers:
+        - !Ref CoreLayer
+      Policies:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "amplify/${ProjectName}*"
+        - LambdaInvokePolicy:
+            FunctionName: !Ref PushVehiclePosition
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - "appsync:GraphQL"
+                - "appsync:GetGraphqlApi"
+                - "appsync:ListGraphqlApis"
+                - "appsync:ListApiKeys"
+              Resource: '*'
+      Environment:
+        Variables:
+          PUSH_VEHICLE_LAMBDA_NAME: !Ref PushVehiclePosition
+          PROJECT_NAME: !Ref ProjectName
+          PROJECT_ENV: !Ref EnvironmentName
+          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/appsyncUrl:1}}'
+
+  PushVehiclePosition:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-PushVehiclePosition"
+      CodeUri: ./lambdas/simulation/pushVehiclePosition
+      Policies:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "amplify/${ProjectName}*"
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - "iot:Connect"
+                - "iot:Publish"
+                - "iot:Subscribe"
+                - "iot:Receive"
+                - "iot:GetThingShadow"
+                - "iot:UpdateThingShadow"
+                - "iot:DeleteThingShadow"
+                - "iot:ListNamedShadowsForThing"
+                - "geo:CalculateRoute"               
+                - "geo:ListRouteCalculators"
+              Resource: '*'
+      Environment:
+        Variables:
+          IOT_TOPIC: !Sub "${ProjectName}/positions"
+          PROJECT_NAME: !Ref ProjectName
+          PROJECT_ENV: !Ref EnvironmentName
+
+  PinpointProject:
+    Type: AWS::Pinpoint::App
+    Properties: 
+      Name: BlogApplication
+  PinpointSMSChannel:
+    Type: AWS::Pinpoint::SMSChannel
+    Properties: 
+      ApplicationId: !Ref PinpointProject
+      Enabled: true
+
+  EventBus: 
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: !Sub "${ProjectName}-${EnvironmentName}-EventBus"
+
+  EventBridgeResponse:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-EventBridgeResponse"
+      CodeUri: ./lambdas/eventbridge
+      Layers:
+        - !Ref CoreLayer
+      Events:
+        EventBusRule:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EventBus
+            Pattern:
+              source: 
+                - "aws.geo"
+              detail-type:
+                - "Location Geofence Event"
+              detail:
+                EventType:
+                  - "ENTER"            
+      Policies:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - PinpointEndpointAccessPolicy:
+            PinpointApplicationId: !Ref PinpointProject
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "amplify/${ProjectName}*"
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - "appsync:GraphQL"
+                - "appsync:GetGraphqlApi"
+                - "appsync:ListGraphqlApis"
+                - "appsync:ListApiKeys"
+              Resource: '*'  
+      Environment:
+        Variables:
+          APPLICATION_ID: !Ref PinpointProject
+          PROJECT_NAME: !Ref ProjectName
+          PROJECT_ENV: !Ref EnvironmentName
+          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/appsyncUrl:1}}'
+
+  IoTUpdateTracker:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-IoTUpdateTracker"
+      CodeUri: ./lambdas/iot
+      Events:
+        EventBusRule:
+          Type: IoTRule
+          Properties:
+            Sql: !Sub "SELECT * FROM '${ProjectName}/positions'"
+      Policies:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub "amplify/${ProjectName}*"
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:                
+                - "geo:ListTrackers"
+                - "geo:ListTrackerConsumers"
+                - "geo:BatchUpdateDevicePosition"                
+                - "geo:BatchGetDevicePosition"                
+                - "geo:GetDevicePositionHistory"
+                - "geo:DescribeTracker"                
+                - "geo:UpdateTracker"
+              Resource: "*"
+      Environment:
+        Variables:
+          PROJECT_NAME: !Ref ProjectName
+          PROJECT_ENV: !Ref EnvironmentName
+
+Outputs:
+  EventBus:
+      Value: !Ref EventBus
+  LaunchDeliveryFleet:
+      Value: !GetAtt LaunchDeliveryFleet.Arn
+  PushVehiclePosition:
+      Value: !GetAtt PushVehiclePosition.Arn

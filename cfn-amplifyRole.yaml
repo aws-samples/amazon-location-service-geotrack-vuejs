@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  
+  AmplifyRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: amplifyconsole-geotrack-backend-role
+      Description: IAM Role to deploy amplify geotrack app
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - amplify.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess-Amplify
+      Policies: 
+        - PolicyName: geotrack-extended-policy
+          PolicyDocument: # JSON policy document
+            Version: '2012-10-17'
+            Statement: # allow read only access to all S3 buckets
+              - Effect: Allow
+                Action:
+                  - ssm:RemoveTagsFromResource
+                  - ssm:AddTagsToResource
+                  - iam:ListPolicies
+                  - iam:CreatePolicies
+                  - iam:ReadPolicies
+                  - iam:ListRoles
+                  - iam:AttachRolePolicy
+                Resource: '*'

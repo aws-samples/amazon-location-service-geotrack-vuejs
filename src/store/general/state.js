@@ -1,7 +1,15 @@
 export default {
-    userDeviceList: [],
+    agentList: [],
     loading: false,
     paginationToken: "",
-    userRec: "",
+    agentRec: "",
     deviceRec: "",
+    depCoord: [],
+    destCoord: [],
+    routeSummary: "",
+    routeSteps: [],
+    deliveryList: [],
+    geoFenceId: "",
+    geoFencePolygon: [],
+    devicesIdsInRoute: []
   };

@@ -27,5 +27,23 @@
         }
       }
     }
+  },
+  "amzlocation": {
+    "geotrack": {
+      "service": "Location",
+      "providerPlugin": "awscloudformation"
+    }
+  },
+  "ssmparam": {
+    "geotrack": {
+      "service": "Ssm",
+      "providerPlugin": "awscloudformation"
+    }
+  },
+  "restapi": {
+    "geotrack": {
+      "service": "ApiGateway",
+      "providerPlugin": "awscloudformation"
+    }
   }
 }

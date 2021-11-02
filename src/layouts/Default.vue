@@ -2,9 +2,43 @@
   <div class="q-pa-md">
     <q-toolbar class="bg-primary text-white q-my-md shadow-2">
       <q-btn flat round dense icon="menu" class="q-mr-sm" to="/" />
-      <q-separator dark vertical inset />
-      <q-btn flat label="GeoApp" />
+      <q-separator dark vertical inset />      
+
+      <q-btn flat label="Oktank Shipment Inc." />
+      <q-btn icon="local_fire_department"
+             class="q-mr-sm"
+             color="orange"
+             flat round dense
+             @click="launchFleet"
+             size="xs" 
+      >
+      <q-tooltip
+          content-class="bg-grey"
+          content-style="font-size: 16px"
+          :offset="[10, 10]"
+        >
+          Lunch Fleet
+        </q-tooltip>
+      </q-btn> 
+            
       <q-separator dark vertical />
+      <div v-for="item of menuItems" :key="item.label">
+        <q-btn stretch flat
+          :icon="item.icon"
+          :label="item.label"
+          :to="item.page"
+        />
+      </div>
+
+      <q-space />
+
+      <!--
+        notice shrink property since we are placing it
+        as child of QToolbar
+      -->
+      
+      <q-separator dark vertical inset />      
+   
       <q-btn flat
         icon="person"
       >
@@ -26,23 +60,7 @@
         >
           Log out
         </q-tooltip>
-      </q-btn>
-
-      <q-space />
-
-      <!--
-        notice shrink property since we are placing it
-        as child of QToolbar
-      -->
-      
-      <q-separator dark vertical />
-      <div v-for="item of menuItems" :key="item.label">
-        <q-btn stretch flat
-          :icon="item.icon"
-          :label="item.label"
-          :to="item.page"
-        />
-      </div>    
+      </q-btn> 
     </q-toolbar>
     <router-view />
   </div>
@@ -51,6 +69,7 @@
 <script>
 import { mapState, mapGetters } from "vuex";
 import { Auth } from "aws-amplify";
+
 export default {
   name: "default-layout",
   data() {
@@ -61,6 +80,14 @@ export default {
         { icon: "house", 
           page: "/", 
           label: "Home" 
+        },
+        { icon: "person_add", 
+          page: "agent", 
+          label: "Agent" 
+        },
+        { icon: "local_shipping", 
+          page: "delivery", 
+          label: "Delivery" 
         }
       ],
     };
@@ -73,6 +100,41 @@ export default {
       } catch (error) {
         console.log("error signing out: ", error);
       }
+    },
+    async launchFleet() {
+
+      let url = process.env.VUE_APP_APIURL
+
+      const currentSession = await Auth.currentSession();
+      this.jwt = currentSession.getIdToken().getJwtToken();
+      const options = {
+        headers: {
+          'authorization': this.jwt
+        }
+      };
+
+      console.log(url + "launch_fleet")
+      let results = await this.$http.post(url + "launch_fleet", {}, options);
+
+      if (results.status == 200) {
+        this.$q.notify({
+          color: "orange",
+          position: "top",
+          timeout: 5000,
+          icon: "local_fire_department",
+          message: results.data.msg,
+        })        
+      }
+      else  {
+        this.$q.notify({
+          color: "orange",
+          position: "top",
+          timeout: 5000,
+          icon: "warning",
+          message: results.data.msg,
+        })    
+      }
+                        
     },
   },
   computed: {

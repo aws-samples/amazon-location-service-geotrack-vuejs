@@ -5,6 +5,8 @@ import store from "../store";
 import DefaultLayout from '../layouts/Default.vue'
 import SimpleLayout from '../layouts/Simple.vue'
 import Home from '../views/Home.vue'
+import Agent from '../views/Agent.vue'
+import Delivery from '../views/Delivery.vue'
 import SignIn from '../views/SignIn.vue'
 import SignUp from '../views/SignUp.vue'
 import ForgotPassword from '../views/ForgotPassword.vue'
@@ -20,6 +22,16 @@ const router = new VueRouter({
         {
           path: "/",
           component: Home,
+          meta: { requiresAuth: true }
+        },
+        {
+          path: "agent",
+          component: Agent,
+          meta: { requiresAuth: true }
+        },
+        {
+          path: "delivery",
+          component: Delivery,
           meta: { requiresAuth: true }
         }      
       ]
