@@ -4,7 +4,9 @@ Location data is a vital ingredient in today's applications, enabling capabiliti
 
 With [Amazon Location Service](https://aws.amazon.com/location/), you can easily add capabilities such as maps, points of interest, geocoding, routing, geofences, and tracking to applications. You retain control of your location data with Amazon Location, so you can combine proprietary data with data from the service. Amazon Location provides cost-effective location-based services (LBS) using high-quality data from global, trusted providers Esri and HERE Technologies.
 
-This repo contains a Vue.js application that displays the users last positions reported in the past 15min in a map, leveraging Amplify for authentication. In the Amplify build process, there is automation that automattically creates the Amazon Location Services' resources and associate a policy to Amazon Cognito role for accessing them. 
+This repo contains a Vue.js prototype that controls a delivery system. For the prototype to work you need to first create the agents and associate unique IoT device Ids to them. Once you have the delivery agents in the system, you can go add the routes they need to go. The form leverages Amazon Location Maps to display de map, Places to fing the latitute and longitute associated to the address typed, Geogence to define a perimeter at the destination so the person can receive a text message when the driver is near by, and Routes to calculate the estimated time and distance. 
+
+At the toolbar there is a fire icon button. Upon clicking this button, the application will simulate the existent delivery routes. An AWS Lambda reads the start and end positions of each delivery route, calculates the route and sends IoT messages with the IoT devices associated to the delivery agents reporting their geo-location over time. The application does not prevent having two routes with the same IoT device, which will produce inconsistent position.
 
 ## Architecture Overview
 
@@ -28,10 +30,6 @@ This repo contains a Vue.js application that displays the users last positions r
 
 #### Managing Delivery Routes
 <img src="./images/geotrack-delivery.png"  width="800"/>
-
-## Testing the solution
-
-At the toolbar there is a fire icon button. Upon clicking this button, the application will simulate the existent delivery routes. An AWS Lambda reads the start and end positions of each delivery route, calculates the route and sends IoT messages with the IoT devices associated to the delivery agents reporting their geo-location over time. The application does not prevent having two routes with the same IoT device, which will produce inconsistent position.
 
 # Deployment
 To deploy this solution into your AWS Account please follow our [Deployment Guide](./docs/deployment_guide.md)
