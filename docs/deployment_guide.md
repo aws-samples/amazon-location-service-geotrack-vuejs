@@ -7,7 +7,7 @@ Before you deploy, you must have the following in place:
  
 # Step 1: Front-end deployment
 
-Before install Amplify we need to create the IAM Role that associate the policies need to implement this solution. From the cloned directory, execute the follow CloudFormation template: 
+Before installing Amplify we need to create the IAM Role that associate the policies need to implement this solution. From the cloned directory, execute the follow CloudFormation template: 
 
 ```bash
 aws cloudformation deploy --template-file cfn-amplifyRole.yaml --stack-name geotrack-amplify-role --capabilities CAPABILITY_NAMED_IAM
