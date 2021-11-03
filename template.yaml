@@ -18,7 +18,7 @@ Parameters:
     Description: A description to identify project
   EnvironmentName:
     Type: String
-    Default: dev
+    Default: main
     Description: A description to identify environment (e.g. dev, prod)
   CorsOrigin:
     Type: String

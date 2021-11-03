@@ -23,7 +23,7 @@ This repo contains a Vue.js application that displays the users last positions r
 #### Real-time tracking visualization
 <img src="./images/geotrack-home.png"  width="800"/>
 
-#### Managering Delivery Agents
+#### Managing Delivery Agents
 <img src="./images/geotrack-agent.png"  width="500"/>
 
 #### Managing Delivery Routes
