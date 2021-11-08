@@ -36,11 +36,8 @@ The follow screenshots shows how simple this step is:
 
 In this step we create the IoT Core and associate it to the AWS Lambda function, so it can send the GPS coordinates to Amazon Location Service Tracker. We also create the AWS Lambda functions to simulate a route in the application. To do so, execute the following command from the cloned repo. 
 
-The backend relies on resources that needed to be created during the front-end deployment, please make sure to continue after Amplify has successfully deployed the application. 
+The backend relies on resources that needed to be created during the front-end deployment, please make sure to proceed after Amplify has successfully deployed the application. 
 
-Take a note of the USER_BRANCH value to use at the *EnvironmentName* parameter in the next step.
-
-![alt text](../images/amplify-console-05.png)
 
 ```bash
 sam deploy -g --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM
@@ -52,7 +49,7 @@ In the questions, provide the stack-name as geotrack-backend the region you are 
 Stack Name [sam-app]: geotrack-backend
 AWS Region [us-east-1]: us-west-2
 Parameter ProjectName [geotrack]:
-Parameter EnvironmentName [main]: < THE USER_BRANCH VALUE FROM AMPLIFY >
+Parameter EnvironmentName [main]:
 Parameter CorsOrigin ['*']:
 Parameter CorsHeaders ['Content-Type,X-Amz-Date,Authorization,X-Api-KeyX-Amz-Security-Token']:
 Parameter CorsMethods ['OPTIONS,POST']:
