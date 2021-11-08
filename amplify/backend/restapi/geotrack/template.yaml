@@ -105,7 +105,7 @@ Resources:
     Type: 'AWS::SSM::Parameter'
     Properties:
       Type: String
-      Name: !Sub '/amplify/${ProjectName}/${env}/apiId'
+      Name: !Sub '/amplify/${ProjectName}/apiId'
       Value: !Ref ApiGw
     DependsOn: ApiGw  
 
@@ -113,7 +113,7 @@ Resources:
     Type: 'AWS::SSM::Parameter'
     Properties:
       Type: String
-      Name: !Sub '/amplify/${ProjectName}/${env}/apiUrl'
+      Name: !Sub '/amplify/${ProjectName}/apiUrl'
       Value: !Sub 'https://${ApiGw}.execute-api.${AWS::Region}.amazonaws.com/v1/'
     DependsOn: ApiGw  
   
@@ -121,7 +121,7 @@ Resources:
     Type: 'AWS::SSM::Parameter'
     Properties:
       Type: String
-      Name: !Sub '/amplify/${ProjectName}/${env}/apiParentId'
+      Name: !Sub '/amplify/${ProjectName}/apiParentId'
       Value: !GetAtt ApiGw.RootResourceId
     DependsOn: ApiGw 
 
@@ -129,7 +129,7 @@ Resources:
     Type: 'AWS::SSM::Parameter'
     Properties:
       Type: String
-      Name: !Sub '/amplify/${ProjectName}/${env}/apiAuthId'
+      Name: !Sub '/amplify/${ProjectName}/apiAuthId'
       Value: !Ref ApiGwAuthorizer
     DependsOn: ApiGw 
 

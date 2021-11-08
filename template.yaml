@@ -46,18 +46,18 @@ Resources:
   LaunchDeliveryFleetProxyResource:
     Type: 'AWS::ApiGateway::Resource'
     Properties:
-      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}'
-      ParentId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiParentId:1}}'
+      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}'
+      ParentId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiParentId:1}}'
       PathPart: 'launch_fleet'
 
   LaunchDeliveryFleetProxyMethod:
     Type: 'AWS::ApiGateway::Method'
     Properties:
-      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}'
+      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}'
       ResourceId: !Ref LaunchDeliveryFleetProxyResource
       HttpMethod: POST
       AuthorizationType: COGNITO_USER_POOLS
-      AuthorizerId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiAuthId:1}}'
+      AuthorizerId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiAuthId:1}}'
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -84,7 +84,7 @@ Resources:
   LaunchDeliveryFleetOptionMethod:
     Type: "AWS::ApiGateway::Method"
     Properties:
-      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}'
+      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}'
       ResourceId: !Ref LaunchDeliveryFleetProxyResource
       AuthorizationType: NONE
       HttpMethod: OPTIONS
@@ -116,7 +116,7 @@ Resources:
       Action: "lambda:InvokeFunction"        
       FunctionName: !GetAtt LaunchDeliveryFleet.Arn
       Principal: "apigateway.amazonaws.com"
-      SourceArn: !Join [ "", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/apiId:1}}', "/*/*/*" ] ] 
+      SourceArn: !Join [ "", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}', "/*/*/*" ] ] 
 
   LaunchDeliveryFleet:
     Type: AWS::Serverless::Function 
@@ -145,7 +145,7 @@ Resources:
           PUSH_VEHICLE_LAMBDA_NAME: !Ref PushVehiclePosition
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
-          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/appsyncUrl:1}}'
+          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/appsyncUrl:1}}'
 
   PushVehiclePosition:
     Type: AWS::Serverless::Function 
@@ -232,7 +232,7 @@ Resources:
           APPLICATION_ID: !Ref PinpointProject
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
-          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/${EnvironmentName}/appsyncUrl:1}}'
+          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/appsyncUrl:1}}'
 
   IoTUpdateTracker:
     Type: AWS::Serverless::Function 

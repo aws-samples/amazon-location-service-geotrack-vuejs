@@ -19,13 +19,13 @@ Resources:
   AppsyncUrlKey:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub "/amplify/${ProjectName}/${env}/appsyncUrl"
+      Name: !Sub "/amplify/${ProjectName}/appsyncUrl"
       Type: "String"
       Value: !Ref GraphQLAPIEndpoint
 
   CognitoIdKey:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub "/amplify/${ProjectName}/${env}/cognitoPoolId"
+      Name: !Sub "/amplify/${ProjectName}/cognitoPoolId"
       Type: "String"
       Value: !Ref AuthCognitoUserPoolId

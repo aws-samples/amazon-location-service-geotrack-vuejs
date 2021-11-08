@@ -35,7 +35,7 @@
             "Properties": {
                 "Type": "String",
                 "Name": {
-                    "Fn::Sub": "/amplify/${ProjectName}/${env}/tracker"
+                    "Fn::Sub": "/amplify/${ProjectName}/tracker"
                 },
                 "Value": {
                     "Ref": "LocationTracker"
@@ -59,7 +59,7 @@
             "Properties": {
                 "Type": "String",
                 "Name": {
-                    "Fn::Sub": "/amplify/${ProjectName}/${env}/geofence"
+                    "Fn::Sub": "/amplify/${ProjectName}/geofence"
                 },
                 "Value": {
                     "Ref": "LocationGeofence"
@@ -84,7 +84,7 @@
             "Properties": {
                 "Type": "String",
                 "Name": {
-                    "Fn::Sub": "/amplify/${ProjectName}/${env}/route"
+                    "Fn::Sub": "/amplify/${ProjectName}/route"
                 },
                 "Value": {
                     "Ref": "LocationRoute"
@@ -111,7 +111,7 @@
             "Properties": {
                 "Type": "String",
                 "Name": {
-                    "Fn::Sub": "/amplify/${ProjectName}/${env}/map"
+                    "Fn::Sub": "/amplify/${ProjectName}/map"
                 },
                 "Value": {
                     "Ref": "LocationMap"
@@ -139,7 +139,7 @@
             "Properties": {
                 "Type": "String",
                 "Name": {
-                    "Fn::Sub": "/amplify/${ProjectName}/${env}/place"
+                    "Fn::Sub": "/amplify/${ProjectName}/place"
                 },
                 "Value": {
                     "Ref": "LocationPlace"

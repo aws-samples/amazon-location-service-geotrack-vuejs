@@ -11,18 +11,19 @@ backend:
         - export AWSREGION=$(aws configure get region)
         - export AWSACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
         - export PROJECT_NAME=$(cat ./amplify/.config/project-config.json | jq -r '.projectName')
-        - export VUE_APP_MAP=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/$AWS_BRANCH/map --query Parameter.Value --output text)
+        - export VUE_APP_MAP=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/map --query Parameter.Value --output text)
         - echo VUE_APP_MAP=${VUE_APP_MAP} >> .env
-        - export VUE_APP_TRACKER=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/$AWS_BRANCH/tracker --query Parameter.Value --output text)
+        - export VUE_APP_TRACKER=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/tracker --query Parameter.Value --output text)
         - echo VUE_APP_TRACKER=${VUE_APP_TRACKER} >> .env
-        - export VUE_APP_PLACE=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/$AWS_BRANCH/place --query Parameter.Value --output text)
+        - export VUE_APP_PLACE=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/place --query Parameter.Value --output text)
         - echo VUE_APP_PLACE=${VUE_APP_PLACE} >> .env
-        - export VUE_APP_GEOFENCE=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/$AWS_BRANCH/geofence --query Parameter.Value --output text)
+        - export VUE_APP_GEOFENCE=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/geofence --query Parameter.Value --output text)
         - echo VUE_APP_GEOFENCE=${VUE_APP_GEOFENCE} >> .env
-        - export VUE_APP_ROUTE=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/$AWS_BRANCH/route --query Parameter.Value --output text)
+        - export VUE_APP_ROUTE=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/route --query Parameter.Value --output text)
         - echo VUE_APP_ROUTE=${VUE_APP_ROUTE} >> .env
-        - export VUE_APP_APIURL=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/$AWS_BRANCH/apiUrl --query Parameter.Value --output text)
+        - export VUE_APP_APIURL=$(aws ssm get-parameter --name /amplify/${PROJECT_NAME}/apiUrl --query Parameter.Value --output text)
         - echo VUE_APP_APIURL=${VUE_APP_APIURL} >> .env
+        - cat .env
         - export AMPLIFYROLENAME=$(cat ./amplify/#current-cloud-backend/amplify-meta.json | jq -r '.providers.awscloudformation.AuthRoleName')
         - export LOCATION_POLICY=$(aws iam list-policies --query 'Policies[*].[PolicyName]' --scope Local --output text | grep -i ${PROJECT_NAME}-location)
         - if [ -z $LOCATION_POLICY ]; then aws iam create-policy --policy-name ${PROJECT_NAME}-location --policy-document file://location-policy.json; fi
