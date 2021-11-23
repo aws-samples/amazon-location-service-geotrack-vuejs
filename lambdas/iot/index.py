@@ -29,7 +29,7 @@ def GetSsmParam(paramKey, isEncrypted):
 
 def handler(event, context):      
 
-    ssmParam = "/amplify/" + project_name + "/" + project_env + "/tracker"
+    ssmParam = "/amplify/" + project_name + "/tracker"
     trackerName = GetSsmParam(ssmParam, False)
 
     response = location.batch_update_device_position(

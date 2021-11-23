@@ -41,7 +41,7 @@ def GetSsmParam(paramKey, isEncrypted):
 
 def route_calculation(departure, destination):
 
-    ssmParam = "/amplify/" + project_name + "/" + project_env + "/route"
+    ssmParam = "/amplify/" + project_name + "/route"
     routeName = GetSsmParam(ssmParam, False)
 
     return location.calculate_route(
