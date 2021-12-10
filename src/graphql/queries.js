@@ -7,9 +7,6 @@ export const getDeliveryAgent = /* GraphQL */ `
       id
       fullName
       deliveryType
-      createdAt
-      updatedAt
-      owner
       device {
         id
         deliveryAgentId
@@ -18,6 +15,10 @@ export const getDeliveryAgent = /* GraphQL */ `
         updatedAt
         owner
       }
+      createdAt
+      updatedAt
+      deliveryAgentDeviceId
+      owner
     }
   }
 `;
@@ -32,9 +33,6 @@ export const listDeliveryAgents = /* GraphQL */ `
         id
         fullName
         deliveryType
-        createdAt
-        updatedAt
-        owner
         device {
           id
           deliveryAgentId
@@ -43,6 +41,10 @@ export const listDeliveryAgents = /* GraphQL */ `
           updatedAt
           owner
         }
+        createdAt
+        updatedAt
+        deliveryAgentDeviceId
+        owner
       }
       nextToken
     }
@@ -83,6 +85,23 @@ export const getDeliveryInfo = /* GraphQL */ `
   query GetDeliveryInfo($id: ID!) {
     getDeliveryInfo(id: $id) {
       id
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+        createdAt
+        updatedAt
+        deliveryAgentDeviceId
+        owner
+      }
       geoStart {
         lat
         lng
@@ -99,22 +118,7 @@ export const getDeliveryInfo = /* GraphQL */ `
       status
       createdAt
       updatedAt
-      deliveryAgent {
-        id
-        fullName
-        deliveryType
-        createdAt
-        updatedAt
-        owner
-        device {
-          id
-          deliveryAgentId
-          deviceType
-          createdAt
-          updatedAt
-          owner
-        }
-      }
+      deliveryInfoDeliveryAgentId
       owner
     }
   }
@@ -128,6 +132,15 @@ export const listDeliveryInfos = /* GraphQL */ `
     listDeliveryInfos(filter: $filter, limit: $limit, nextToken: $nextToken) {
       items {
         id
+        deliveryAgent {
+          id
+          fullName
+          deliveryType
+          createdAt
+          updatedAt
+          deliveryAgentDeviceId
+          owner
+        }
         geoStart {
           lat
           lng
@@ -144,14 +157,7 @@ export const listDeliveryInfos = /* GraphQL */ `
         status
         createdAt
         updatedAt
-        deliveryAgent {
-          id
-          fullName
-          deliveryType
-          createdAt
-          updatedAt
-          owner
-        }
+        deliveryInfoDeliveryAgentId
         owner
       }
       nextToken

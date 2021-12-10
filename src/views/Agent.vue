@@ -23,7 +23,14 @@
     />
 
     <q-dialog v-model="b_addrow" persistent>
+      
       <q-card style="min-width: 450px">
+        <q-form 
+            @submit.prevent.stop="onSubmit"
+            @reset.prevent.stop="onReset"
+            ref="agentForm"
+          >
+                  
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">New/agent Device</div>
           <q-space />
@@ -33,36 +40,62 @@
         <q-card-section class="q-pt-none">
           <q-input
             label="Full Name"
-            hint="Name"
+            :rules="[
+              () => !!fullName || 'This field is required',
+              () => !!fullName && fullName.length >= 5 || 'Full Name must contain 5 or more characters'
+            ]"
             v-model="fullName"
+            ref="fullName"
+            lazy-rules
             autofocus
-            @keyup.enter="prompt = false"
+            @keyup.enter="prompt = false"            
           />
 
           <q-select 
             v-model="deliveryType" 
+            ref="deliveryType"
+            lazy-rules
+            :rules="[
+              val => val !== null && val !== '' || 'Please select a delivery type',
+            ]"            
             :options="optionsDelivery" 
             label="Delivery Type" />
 
           <q-select 
             v-model="deviceType" 
+            ref="deviceType"
+            :rules="[
+              val => val !== null && val !== '' || 'Please select a device type',
+            ]"           
             :options="optionsDevice" 
             label="Device Type" />
 
           <q-input
             label="Device Id"
-            hint="The tracker device Id"
             v-model="deviceId"
+            ref="deviceId"
+            :rules="[
+              () => !!deviceId || 'This field is required',
+              () => !!deviceId && deviceId.length >= 5 || 'Full Name must contain 5 or more characters',
+              () => (deviceId || '').indexOf(' ') < 0 || 'No spaces are allowed',
+              // () => !(this.data.includes(deviceId)) || 'DeviceId is not unique',
+              () => !(this.data.some(e => e.deviceId === deviceId)) || 'DeviceId is not unique'
+            ]"
+            lazy-rules
             autofocus
             @keyup.enter="prompt = false"
           />
+          
+
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary">
           <q-btn flat label="Cancel" v-close-popup />
-          <q-btn flat label="Add Record" v-close-popup @click="saveRow" />
-        </q-card-actions>
-      </q-card>
+          <q-btn flat label="Reset" type="reset"/>
+          <q-btn flat label="Add Record" type="submit" />
+        </q-card-actions>      
+         </q-form>
+      </q-card>      
     </q-dialog>
 
 
@@ -182,11 +215,16 @@ export default {
         this.b_map = !this.b_map;                   
     },
 
-    resetVariables() {
-      this.agentId = ""
-      this.fullName = ""
-      this.deliveryType = ""
-      this.deviceId = ""
+    onReset() {
+      this.agentId = null
+      this.fullName = null
+      this.deliveryType = null
+      this.deviceType = null
+      this.deviceId = null
+      this.$refs.fullName.resetValidation();
+      this.$refs.deliveryType.resetValidation();
+      this.$refs.deviceType.resetValidation();
+      this.$refs.deviceId.resetValidation();
     },
 
     async loadTable() {
@@ -203,7 +241,7 @@ export default {
               deviceType: this.agentList[i].device.deviceType,
               deviceUpdatedAt: this.agentList[i].device.updatedAt,
             })
-          }        
+          }
         }             
       } catch (error) {
         console.error(error);
@@ -216,7 +254,20 @@ export default {
       }
     },
 
-    async saveRow() {
+    async onSubmit() {
+      this.$refs.fullName.validate();
+      this.$refs.deliveryType.validate();
+      this.$refs.deviceType.validate();
+      this.$refs.deviceId.validate();
+
+      if (this.$refs.fullName.hasError || 
+          this.$refs.deliveryType.hasError ||
+          this.$refs.deviceType.hasError ||
+          this.$refs.deviceId.hasError
+          ) {
+          return false;
+      }
+
       // Check for deviceId
       try {
         await this.$store.dispatch("general/saveAgent", {
@@ -234,10 +285,10 @@ export default {
           agentId: this.agentRec.id
         });
 
-        this.resetVariables();
+        this.b_addrow = false;
+        this.onReset();
         this.loadTable();
-        
-        console.log("Device Saved");
+                
       } catch (error) {
         console.error(error);
         this.$q.notify({

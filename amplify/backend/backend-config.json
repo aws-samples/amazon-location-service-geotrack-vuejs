@@ -1,10 +1,32 @@
 {
   "auth": {
-    "geotrack6cb2c7266cb2c726": {
+    "geotrack4e545e25": {
       "service": "Cognito",
       "providerPlugin": "awscloudformation",
       "dependsOn": [],
-      "customAuth": false
+      "customAuth": false,
+      "frontendAuthConfig": {
+        "socialProviders": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "signupAttributes": [
+          "EMAIL",
+          "FAMILY_NAME",
+          "GIVEN_NAME"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyMinLength": 8,
+          "passwordPolicyCharacters": []
+        },
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      }
     }
   },
   "api": {
@@ -16,7 +38,7 @@
           "defaultAuthentication": {
             "authenticationType": "AMAZON_COGNITO_USER_POOLS",
             "userPoolConfig": {
-              "userPoolId": "authgeotrack6cb2c7266cb2c726"
+              "userPoolId": "authgeotrack4e545e25"
             }
           },
           "additionalAuthenticationProviders": [
@@ -28,22 +50,71 @@
       }
     }
   },
-  "amzlocation": {
-    "geotrack": {
-      "service": "Location",
-      "providerPlugin": "awscloudformation"
-    }
-  },
-  "ssmparam": {
-    "geotrack": {
-      "service": "Ssm",
-      "providerPlugin": "awscloudformation"
-    }
-  },
-  "restapi": {
-    "geotrack": {
-      "service": "ApiGateway",
-      "providerPlugin": "awscloudformation"
+  "custom": {
+    "amzlocation": {
+      "service": "customCloudformation",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "auth",
+          "resourceName": "geotrack4e545e25",
+          "attributes": [
+            "IdentityPoolId",
+            "IdentityPoolName",
+            "UserPoolId",
+            "UserPoolArn",
+            "UserPoolName",
+            "AppClientIDWeb",
+            "AppClientID"
+          ]
+        }
+      ]
+    },
+    "ssmparam": {
+      "service": "customCloudformation",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "auth",
+          "resourceName": "geotrack4e545e25",
+          "attributes": [
+            "IdentityPoolId",
+            "IdentityPoolName",
+            "UserPoolId",
+            "UserPoolArn",
+            "UserPoolName",
+            "AppClientIDWeb",
+            "AppClientID"
+          ]
+        },
+        {
+          "category": "api",
+          "resourceName": "geotrack",
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
+          ]
+        }
+      ]
+    },
+    "restapi": {
+      "service": "customCloudformation",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "auth",
+          "resourceName": "geotrack4e545e25",
+          "attributes": [
+            "IdentityPoolId",
+            "IdentityPoolName",
+            "UserPoolId",
+            "UserPoolArn",
+            "UserPoolName",
+            "AppClientIDWeb",
+            "AppClientID"
+          ]
+        }
+      ]
     }
   }
 }

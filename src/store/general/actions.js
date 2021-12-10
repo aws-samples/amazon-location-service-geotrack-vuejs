@@ -62,35 +62,40 @@ export function setGeoFencePolygon(
 
 export function calculateRoute(
     { commit }, { credentials, depLngLat, destLngLat}) {
-    console.group("store/general/actions/calculateRoute");
-    this.locationService = new Location({
-        credentials: credentials,
-        region: awsconfig.aws_project_region,
-    });
+        return new Promise((resolve, reject) => {   
+            console.group("store/general/actions/calculateRoute");
+            let locationService = new Location({
+                credentials: credentials,
+                region: awsconfig.aws_project_region,
+            });
 
-    var params = {
-        CalculatorName: process.env.VUE_APP_ROUTE,
-        DeparturePosition: [
-          depLngLat.lng,
-          depLngLat.lat,
-        ],
-        DestinationPosition: [
-          destLngLat.lng,
-          destLngLat.lat,
-        ],
-        DepartNow: false,
-        IncludeLegGeometry: true,
-        TravelMode: 'Car'
-      };    
-      this.locationService.calculateRoute(params, function(err, data) {
-        if (err) console.log(err, err.stack);
-        // an error occurred
-        else {
-            commit("SET_ROUTESTEPS", data.Legs[0].Geometry.LineString);
-            commit("SET_ROUTESUMMARY", data.Summary);
-            console.groupEnd();
-        }
-    })
+            var params = {
+                CalculatorName: process.env.VUE_APP_ROUTE,
+                DeparturePosition: [
+                depLngLat.lng,
+                depLngLat.lat,
+                ],
+                DestinationPosition: [
+                destLngLat.lng,
+                destLngLat.lat,
+                ],
+                DepartNow: false,
+                IncludeLegGeometry: true,
+                TravelMode: 'Car'
+            };    
+            locationService.calculateRoute(params, function(err, data) {
+                if (err) { 
+                    console.error(err, err.stack);
+                    reject("Rejected");
+                }
+                else {
+                    commit("SET_ROUTESTEPS", data.Legs[0].Geometry.LineString);
+                    commit("SET_ROUTESUMMARY", data.Summary);
+                    console.groupEnd();
+                    resolve("Resolved");
+                }
+            })
+        });
 }
 
 export function saveGeoFence(
@@ -100,7 +105,7 @@ export function saveGeoFence(
                 console.group("store/general/actions/saveGeoFence");
                 commit("SET_LOADER", true);
 
-                this.locationService = new Location({
+                let locationService = new Location({
                     credentials: credentials,
                     region: awsconfig.aws_project_region,
                 });    
@@ -113,7 +118,7 @@ export function saveGeoFence(
                     }
                 }
                 
-                    this.locationService.putGeofence(geoParams, function(err, data) {
+                    locationService.putGeofence(geoParams, function(err, data) {
                     if (err) { 
                         console.log(err, err.stack);
                         reject("Rejected");
@@ -147,12 +152,12 @@ export function fetchGeoFenceItems(
         commit("SET_LOADER", true);
         commit("SET_LOCATION_LIST", []);
 
-        this.locationService = new Location({
+        let locationService = new Location({
             credentials: credentials,
             region: awsconfig.aws_project_region,
         });
 
-        this.locationService.listGeofences({ CollectionName: process.env.VUE_APP_GEOFENCE }, function (err, response) {
+        locationService.listGeofences({ CollectionName: process.env.VUE_APP_GEOFENCE }, function (err, response) {
             if (err) console.log(err, err.stack); // an error occurred
             else {                
                 if (response && response.Entries.length > 0) {
@@ -451,8 +456,6 @@ export async function saveDeliveryInfo({ commit },
             status: routeStatus,
         }
 
-        console.log(deliveryInfoInput)
-
         if (id != null && id.length > 2) {
             deliveryInfoInput["id"] = id
 
@@ -475,7 +478,6 @@ export async function saveDeliveryInfo({ commit },
 
         commit("SET_LOADER", false);        
         console.groupEnd();
-        console.log(result);
         return result;
     } catch (error) {
         console.error(error);

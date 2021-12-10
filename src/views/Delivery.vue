@@ -47,36 +47,59 @@
           <div class="text-h6">Adding DeliveryInfo</div>
         </q-card-section>
         <q-card-section>
-          <q-form @submit="onSubmit" @reset="onReset" class="q-gutter-md">
+            <q-form 
+            @submit.prevent.stop="onSubmit"
+            @reset.prevent.stop="onReset"
+            ref="deliveryForm"
+            class="q-gutter-md"
+          >
             <q-input
               v-model="userPhone"
+              ref="userPhone"
               label="Client's mobile phone"
               :maxlength="20"
               unmasked-value
               :mask="phoneMask"
+              :rules="[
+                val => val !== null && val !== '' || 'This field is required',
+              ]"
             />
 
             <q-select
               v-model="agent"
+              ref="agent"
               :options="agentOptions"
+              :rules="[
+                val => val !== null && val !== '' || 'This field is required',
+                () => !(this.data.some(e => e.deliveryAgentId === agent.value)) || 'Agent already assigned for delivery'
+
+              ]"
               label="Delivery Agent"
             />
 
             <q-select
               v-model="departure"
+              ref="departure"
               :options="departureOptions"
+              :rules="[
+                val => val !== null && val !== '' || 'This field is required',
+              ]" 
               use-input
               emit-value
               map-options
               input-debounce="0"
               @filter="filterDep"
               @input="setPlaceCoord"
-              label="Departure"
+              label="Origin"
             />
 
             <q-select
               v-model="destination"
+              ref="destination"
               :options="destinationOptions"
+              :rules="[
+                val => val !== null && val !== '' || 'This field is required',
+              ]"
               use-input
               emit-value
               map-options
@@ -98,14 +121,14 @@
                 <q-btn
                   push
                   label="Save"
-                  type="Save Route"
+                  type="submit"
                   color="primary"
                   icon="save"
                 />
                 <q-btn
                   push
                   label="Reset"
-                  type="Reset"
+                  type="reset"
                   color="orange"
                   icon="restart_alt"
                 />
@@ -350,6 +373,19 @@ export default {
     },
 
     async onSubmit() {
+      this.$refs.userPhone.validate();
+      this.$refs.agent.validate();
+      this.$refs.departure.validate();
+      this.$refs.destination.validate();
+
+      if (this.$refs.userPhone.hasError || 
+          this.$refs.agent.hasError ||
+          this.$refs.departure.hasError ||
+          this.$refs.destination.hasError
+          ) {
+          return false;
+      }
+
       try {
         await this.$store.dispatch("general/saveGeoFence", {
           credentials: this.credentials,
@@ -358,6 +394,8 @@ export default {
         });
 
         var expiredAt = new Date();
+
+        await this.calculateRoute();
 
         await this.$store.dispatch("general/saveDeliveryInfo", {
           deliveryInfoDeliveryAgentId: this.agent.value,
@@ -388,7 +426,16 @@ export default {
       this.b_addrow = false;
     },
 
-    onReset() {},
+    onReset() {
+      this.userPhone = null
+      this.agent = null
+      this.departure = null
+      this.destination = null
+      this.$refs.userPhone.resetValidation();
+      this.$refs.agent.resetValidation();
+      this.$refs.departure.resetValidation();
+      this.$refs.destination.resetValidation();
+    },
 
     async toggleShowMap(props) {
       this.params = props.row;
@@ -508,8 +555,8 @@ export default {
       });
     },
 
-    calculateRoute() {
-      this.$store.dispatch("general/calculateRoute", {
+    async calculateRoute() {
+      await this.$store.dispatch("general/calculateRoute", {
         credentials: this.credentials,
         depLngLat: this.depLocation,
         destLngLat: this.destLocation,

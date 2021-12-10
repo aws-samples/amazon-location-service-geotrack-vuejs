@@ -2,14 +2,11 @@
 // this is an auto generated file. This will be overwritten
 
 export const onCreateDeliveryAgent = /* GraphQL */ `
-  subscription OnCreateDeliveryAgent {
-    onCreateDeliveryAgent {
+  subscription OnCreateDeliveryAgent($owner: String) {
+    onCreateDeliveryAgent(owner: $owner) {
       id
       fullName
       deliveryType
-      createdAt
-      updatedAt
-      owner
       device {
         id
         deliveryAgentId
@@ -18,18 +15,19 @@ export const onCreateDeliveryAgent = /* GraphQL */ `
         updatedAt
         owner
       }
+      createdAt
+      updatedAt
+      deliveryAgentDeviceId
+      owner
     }
   }
 `;
 export const onUpdateDeliveryAgent = /* GraphQL */ `
-  subscription OnUpdateDeliveryAgent {
-    onUpdateDeliveryAgent {
+  subscription OnUpdateDeliveryAgent($owner: String) {
+    onUpdateDeliveryAgent(owner: $owner) {
       id
       fullName
       deliveryType
-      createdAt
-      updatedAt
-      owner
       device {
         id
         deliveryAgentId
@@ -38,18 +36,19 @@ export const onUpdateDeliveryAgent = /* GraphQL */ `
         updatedAt
         owner
       }
+      createdAt
+      updatedAt
+      deliveryAgentDeviceId
+      owner
     }
   }
 `;
 export const onDeleteDeliveryAgent = /* GraphQL */ `
-  subscription OnDeleteDeliveryAgent {
-    onDeleteDeliveryAgent {
+  subscription OnDeleteDeliveryAgent($owner: String) {
+    onDeleteDeliveryAgent(owner: $owner) {
       id
       fullName
       deliveryType
-      createdAt
-      updatedAt
-      owner
       device {
         id
         deliveryAgentId
@@ -58,12 +57,16 @@ export const onDeleteDeliveryAgent = /* GraphQL */ `
         updatedAt
         owner
       }
+      createdAt
+      updatedAt
+      deliveryAgentDeviceId
+      owner
     }
   }
 `;
 export const onCreateDevice = /* GraphQL */ `
-  subscription OnCreateDevice {
-    onCreateDevice {
+  subscription OnCreateDevice($owner: String) {
+    onCreateDevice(owner: $owner) {
       id
       deliveryAgentId
       deviceType
@@ -74,8 +77,8 @@ export const onCreateDevice = /* GraphQL */ `
   }
 `;
 export const onUpdateDevice = /* GraphQL */ `
-  subscription OnUpdateDevice {
-    onUpdateDevice {
+  subscription OnUpdateDevice($owner: String) {
+    onUpdateDevice(owner: $owner) {
       id
       deliveryAgentId
       deviceType
@@ -86,8 +89,8 @@ export const onUpdateDevice = /* GraphQL */ `
   }
 `;
 export const onDeleteDevice = /* GraphQL */ `
-  subscription OnDeleteDevice {
-    onDeleteDevice {
+  subscription OnDeleteDevice($owner: String) {
+    onDeleteDevice(owner: $owner) {
       id
       deliveryAgentId
       deviceType
@@ -98,9 +101,26 @@ export const onDeleteDevice = /* GraphQL */ `
   }
 `;
 export const onCreateDeliveryInfo = /* GraphQL */ `
-  subscription OnCreateDeliveryInfo {
-    onCreateDeliveryInfo {
+  subscription OnCreateDeliveryInfo($owner: String) {
+    onCreateDeliveryInfo(owner: $owner) {
       id
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+        createdAt
+        updatedAt
+        deliveryAgentDeviceId
+        owner
+      }
       geoStart {
         lat
         lng
@@ -117,30 +137,32 @@ export const onCreateDeliveryInfo = /* GraphQL */ `
       status
       createdAt
       updatedAt
-      deliveryAgent {
-        id
-        fullName
-        deliveryType
-        createdAt
-        updatedAt
-        owner
-        device {
-          id
-          deliveryAgentId
-          deviceType
-          createdAt
-          updatedAt
-          owner
-        }
-      }
+      deliveryInfoDeliveryAgentId
       owner
     }
   }
 `;
 export const onUpdateDeliveryInfo = /* GraphQL */ `
-  subscription OnUpdateDeliveryInfo {
-    onUpdateDeliveryInfo {
+  subscription OnUpdateDeliveryInfo($owner: String) {
+    onUpdateDeliveryInfo(owner: $owner) {
       id
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+        createdAt
+        updatedAt
+        deliveryAgentDeviceId
+        owner
+      }
       geoStart {
         lat
         lng
@@ -157,30 +179,32 @@ export const onUpdateDeliveryInfo = /* GraphQL */ `
       status
       createdAt
       updatedAt
-      deliveryAgent {
-        id
-        fullName
-        deliveryType
-        createdAt
-        updatedAt
-        owner
-        device {
-          id
-          deliveryAgentId
-          deviceType
-          createdAt
-          updatedAt
-          owner
-        }
-      }
+      deliveryInfoDeliveryAgentId
       owner
     }
   }
 `;
 export const onDeleteDeliveryInfo = /* GraphQL */ `
-  subscription OnDeleteDeliveryInfo {
-    onDeleteDeliveryInfo {
+  subscription OnDeleteDeliveryInfo($owner: String) {
+    onDeleteDeliveryInfo(owner: $owner) {
       id
+      deliveryAgent {
+        id
+        fullName
+        deliveryType
+        device {
+          id
+          deliveryAgentId
+          deviceType
+          createdAt
+          updatedAt
+          owner
+        }
+        createdAt
+        updatedAt
+        deliveryAgentDeviceId
+        owner
+      }
       geoStart {
         lat
         lng
@@ -197,22 +221,7 @@ export const onDeleteDeliveryInfo = /* GraphQL */ `
       status
       createdAt
       updatedAt
-      deliveryAgent {
-        id
-        fullName
-        deliveryType
-        createdAt
-        updatedAt
-        owner
-        device {
-          id
-          deliveryAgentId
-          deviceType
-          createdAt
-          updatedAt
-          owner
-        }
-      }
+      deliveryInfoDeliveryAgentId
       owner
     }
   }

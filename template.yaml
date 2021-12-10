@@ -152,6 +152,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${ProjectName}-${EnvironmentName}-PushVehiclePosition"
       CodeUri: ./lambdas/simulation/pushVehiclePosition
+      Timeout: 600
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - SSMParameterReadPolicy:
@@ -180,7 +181,7 @@ Resources:
   PinpointProject:
     Type: AWS::Pinpoint::App
     Properties: 
-      Name: BlogApplication
+      Name: !Sub "${ProjectName}-${EnvironmentName}-PinPoint"
   PinpointSMSChannel:
     Type: AWS::Pinpoint::SMSChannel
     Properties: 
@@ -199,19 +200,6 @@ Resources:
       CodeUri: ./lambdas/eventbridge
       Layers:
         - !Ref CoreLayer
-      Events:
-        EventBusRule:
-          Type: EventBridgeRule
-          Properties:
-            EventBusName: !Ref EventBus
-            Pattern:
-              source: 
-                - "aws.geo"
-              detail-type:
-                - "Location Geofence Event"
-              detail:
-                EventType:
-                  - "ENTER"            
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - PinpointEndpointAccessPolicy:
@@ -233,6 +221,41 @@ Resources:
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
           APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/appsyncUrl:1}}'
+
+
+  GeoRule:
+    Type: AWS::Events::Rule
+    Properties:       
+      Name: !Sub "${ProjectName}-${EnvironmentName}-EventRule"
+      EventBusName: !Ref EventBus
+      State: ENABLED
+      EventPattern:
+        source: 
+          - "aws.geo"
+        detail-type:
+          - "Location Geofence Event"
+        detail:
+          EventType:
+            - "ENTER"
+      Targets: 
+      - 
+        Arn: 
+          Fn::GetAtt: 
+            - "EventBridgeResponse"
+            - "Arn"
+        Id: "geoTrackV1"
+
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref "EventBridgeResponse"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "GeoRule"
+          - "Arn"
+      
 
   IoTUpdateTracker:
     Type: AWS::Serverless::Function 

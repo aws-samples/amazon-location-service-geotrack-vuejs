@@ -7,7 +7,7 @@ type DeliveryAgent @model
   id: ID!
   fullName: String!
   deliveryType: String!
-  device: Device @connection 
+  device: Device @hasOne 
 }
 
 type Device @model 
@@ -28,7 +28,7 @@ type DeliveryInfo @model
   { allow: owner }
 ]){
   id: ID!
-  deliveryAgent: DeliveryAgent @connection
+  deliveryAgent: DeliveryAgent @hasOne
   geoStart: Coordinate
   geoEnd: Coordinate
   duration: Float!
