@@ -3,7 +3,7 @@
     <!-- <q-card square class="shadow-24" style="width:300px;height:485px;"> -->
     <q-card square class="shadow-24">
       <q-card-section class="bg-primary">
-        <h4 class="text-h6 text-black q-my-sm">Login</h4>
+        <h4 class="text-h6 text-center text-white q-my-sm">Login</h4>
       </q-card-section>
       <q-card-section>
         <q-form>
