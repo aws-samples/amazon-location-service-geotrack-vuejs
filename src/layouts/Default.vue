@@ -4,7 +4,7 @@
       <q-btn flat round dense icon="menu" class="q-mr-sm" to="/" />
       <q-separator dark vertical inset />      
 
-      <q-btn flat label="Oktank Shipment Inc." />
+      <q-btn flat label="Stealth Connect" />
       <q-btn icon="local_fire_department"
              class="q-mr-sm"
              color="orange"
@@ -17,7 +17,7 @@
           content-style="font-size: 16px"
           :offset="[10, 10]"
         >
-          Lunch Fleet
+          Enable Drones
         </q-tooltip>
       </q-btn> 
             
@@ -83,11 +83,11 @@ export default {
         },
         { icon: "person_add", 
           page: "agent", 
-          label: "Agent" 
+          label: "Drone" 
         },
         { icon: "local_shipping", 
           page: "delivery", 
-          label: "Delivery" 
+          label: "Track" 
         }
       ],
     };
