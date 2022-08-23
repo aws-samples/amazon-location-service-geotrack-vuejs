@@ -1,3 +1,8 @@
+amplify/team-provider-info.json
+.secret-*
+samconfig.toml
+.env*
+
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
 amplify/.config/local-*
@@ -18,7 +23,3 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
-amplify/team-provider-info.json
-.secret-*
-samconfig.toml
-.env*

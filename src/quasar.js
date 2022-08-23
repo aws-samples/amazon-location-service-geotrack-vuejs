@@ -8,12 +8,40 @@ import {
   QDialog,
   Notify,
   ClosePopup,
-  QScrollArea
+  QScrollArea,
+  QLayout,
+  QToolbar,
+  QBanner,
+  QCard,
+  QPageContainer,
+  QBtn,
+  QForm,
+  QInput,
+  QSpace,
+  QSeparator,
+  QCardSection,
+  QCardActions,
+  QIcon
 } from 'quasar'
 
 Vue.use(Quasar, {
   config: {},
-  components: { QDialog, QScrollArea },
+  components: { 
+    QDialog, 
+    QScrollArea, 
+    QLayout, 
+    QToolbar, 
+    QBanner, 
+    QCard, 
+    QPageContainer,
+    QBtn,
+    QForm,
+    QInput,
+    QSpace,
+    QSeparator,
+    QCardSection,
+    QCardActions,
+    QIcon },
   directives: { ClosePopup },
   plugins: { Notify }
  })

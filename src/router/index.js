@@ -22,7 +22,7 @@ const router = new VueRouter({
         {
           path: "/",
           component: Home,
-          meta: { requiresAuth: false }
+          meta: { requiresAuth: true }
         },
         {
           path: "agent",
