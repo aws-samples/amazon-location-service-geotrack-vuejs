@@ -200,7 +200,7 @@
 <script>
 import { mapState, mapGetters } from "vuex";
 import { Auth } from "aws-amplify";
-import awsconfig from "../aws-exports";
+import awsconfig from "../../aws-exports";
 import location from "aws-sdk/clients/location";
 import Map from "../components/Map";
 import * as turf from "@turf/turf";

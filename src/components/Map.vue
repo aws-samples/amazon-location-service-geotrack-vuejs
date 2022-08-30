@@ -7,7 +7,7 @@
 <script>
 import maplibregl from "maplibre-gl";
 import { Auth } from "aws-amplify";
-import awsconfig from "../aws-exports";
+import awsconfig from "../../aws-exports";
 import { Signer } from "@aws-amplify/core";
 import location from "aws-sdk/clients/location";
 import { mapState } from "vuex";

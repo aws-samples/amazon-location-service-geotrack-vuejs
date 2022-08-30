@@ -1,17 +1,20 @@
 <template>
 <div>
-  <Map action="display_routes" /> 
+  <Map action="display_routes" />
+<!--  <app-user-menu></app-user-menu>-->
 </div>  
 </template>
 <script>
 import { mapGetters } from "vuex";
 import { Auth } from "aws-amplify";
 import Map from '../components/Map'
+// import AppUserMenu from "@/components/AppUserMenu";
 
 export default {
   name: "Home",
   components: {
-    Map
+    Map,
+    // AppUserMenu
   },
   data() {
     return {

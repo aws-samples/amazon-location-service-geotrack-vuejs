@@ -4,7 +4,7 @@ import { createDeliveryInfo, updateDeliveryInfo, deleteDeliveryInfo } from "../.
 import { listDeliveryAgents, listDeliveryInfos } from "../../graphql/queries";
 import { listDevicesIds } from "../general/queries"
 import Location from "aws-sdk/clients/location";
-import awsconfig from '../../aws-exports'
+import awsconfig from '../../../aws-exports'
 
 export async function fetchDevicesIdsInRoute(
     { commit }) {

@@ -1,0 +1,47 @@
+type DeliveryAgent @model 
+@auth(rules: [
+  { allow:  private, provider: iam },
+  { allow:  private, provider: userPools }, 
+  { allow: owner }
+]){
+  id: ID!
+  fullName: String!
+  deliveryType: String!
+  device: Device @hasOne 
+}
+
+type Device @model 
+@auth(rules: [
+  { allow:  private, provider: iam }, 
+  { allow:  private, provider: userPools }, 
+  { allow: owner }
+]){
+  id: ID!
+  deliveryAgentId: ID
+  deviceType: String
+}
+
+type DeliveryInfo @model
+@auth(rules: [
+  { allow:  private, provider: iam }, 
+  { allow:  private, provider: userPools }, 
+  { allow: owner }
+]){
+  id: ID!
+  deliveryAgent: DeliveryAgent @hasOne
+  geoStart: Coordinate
+  geoEnd: Coordinate
+  duration: Float!
+  distance: Float!
+  geoFenceId: ID
+  userPhone: String
+  expireAt: Float!
+  status: String!
+}
+
+type Coordinate
+@aws_cognito_user_pools
+{
+  lat: Float!
+  lng: Float!
+}

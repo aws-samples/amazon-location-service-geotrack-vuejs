@@ -19,6 +19,9 @@ import {
   QInput,
   QSpace,
   QSeparator,
+    QBtnDropdown,
+    QDrawer,
+    QItem,
   QCardSection,
   QCardActions,
   QIcon
@@ -27,10 +30,13 @@ import {
 Vue.use(Quasar, {
   config: {},
   components: { 
-    QDialog, 
+    QDialog,
+    QDrawer,
+    QLayout,
+    QBtnDropdown,
+    QItem,
     QScrollArea, 
-    QLayout, 
-    QToolbar, 
+    QToolbar,
     QBanner, 
     QCard, 
     QPageContainer,

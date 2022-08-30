@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import store from "../store";
-
+import Profile from '../views/Profile'
 import DefaultLayout from '../layouts/Default.vue'
 import SimpleLayout from '../layouts/Simple.vue'
 import Home from '../views/Home.vue'
@@ -33,7 +33,12 @@ const router = new VueRouter({
           path: "delivery",
           component: Delivery,
           meta: { requiresAuth: true }
-        }      
+        },
+        {
+          path: "profile",
+          component: Profile,
+          meta: {requiresAuth: true}
+        }
       ]
     },
     {

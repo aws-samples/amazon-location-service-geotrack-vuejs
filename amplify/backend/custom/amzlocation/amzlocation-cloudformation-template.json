@@ -1,0 +1,217 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Outputs": {
+    "LocationTrackerOutput": {
+      "Value": {
+        "Ref": "LocationTracker"
+      }
+    },
+    "LocationRouteOutput": {
+      "Value": {
+        "Ref": "LocationRoute"
+      }
+    },
+    "LocationPlaceOutput": {
+      "Value": {
+        "Ref": "LocationPlace"
+      }
+    }
+  },
+  "Resources": {
+    "LocationTracker": {
+      "Type": "AWS::Location::Tracker",
+      "Properties": {
+        "PricingPlan": {
+          "Ref": "DefaultPricingPlan"
+        },
+        "Description": {
+          "Fn::Sub": "${ProjectName}-${env}"
+        },
+        "TrackerName": {
+          "Fn::Sub": "${ProjectName}-${env}-tracker"
+        }
+      }
+    },
+    "TrackerParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Name": {
+          "Fn::Sub": "/amplify/${ProjectName}/tracker"
+        },
+        "Value": {
+          "Ref": "LocationTracker"
+        }
+      }
+    },
+    "LocationGeofence": {
+      "Type": "AWS::Location::GeofenceCollection",
+      "Properties": {
+        "CollectionName": {
+          "Fn::Sub": "${ProjectName}-${env}-geofence"
+        },
+        "PricingPlan": {
+          "Ref": "DefaultPricingPlan"
+        },
+        "Description": {
+          "Fn::Sub": "${ProjectName}-${env}"
+        }
+      }
+    },
+    "GeoFenceParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Name": {
+          "Fn::Sub": "/amplify/${ProjectName}/geofence"
+        },
+        "Value": {
+          "Ref": "LocationGeofence"
+        }
+      }
+    },
+    "LocationRoute": {
+      "Type": "AWS::Location::RouteCalculator",
+      "Properties": {
+        "DataSource": "Esri",
+        "PricingPlan": {
+          "Ref": "DefaultPricingPlan"
+        },
+        "Description": {
+          "Fn::Sub": "${ProjectName}-${env}"
+        },
+        "CalculatorName": {
+          "Fn::Sub": "${ProjectName}-${env}-route"
+        }
+      }
+    },
+    "RouteParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Name": {
+          "Fn::Sub": "/amplify/${ProjectName}/route"
+        },
+        "Value": {
+          "Ref": "LocationRoute"
+        }
+      }
+    },
+    "LocationMap": {
+      "Type": "AWS::Location::Map",
+      "Properties": {
+        "MapName": {
+          "Fn::Sub": "${ProjectName}-${env}-map"
+        },
+        "Configuration": {
+          "Style": "VectorEsriStreets"
+        },
+        "PricingPlan": {
+          "Ref": "DefaultPricingPlan"
+        },
+        "Description": {
+          "Fn::Sub": "${ProjectName}-${env}"
+        }
+      }
+    },
+    "MapParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Name": {
+          "Fn::Sub": "/amplify/${ProjectName}/map"
+        },
+        "Value": {
+          "Ref": "LocationMap"
+        }
+      }
+    },
+    "LocationPlace": {
+      "Type": "AWS::Location::PlaceIndex",
+      "Properties": {
+        "PricingPlan": {
+          "Ref": "DefaultPricingPlan"
+        },
+        "Description": {
+          "Fn::Sub": "${ProjectName}-${env}"
+        },
+        "DataSourceConfiguration": {
+          "IntendedUse": "SingleUse"
+        },
+        "IndexName": {
+          "Fn::Sub": "${ProjectName}-${env}-place"
+        },
+        "DataSource": "Esri"
+      }
+    },
+    "PlaceParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Type": "String",
+        "Name": {
+          "Fn::Sub": "/amplify/${ProjectName}/place"
+        },
+        "Value": {
+          "Ref": "LocationPlace"
+        }
+      }
+    },
+    "TrackerConsumer": {
+      "Type" : "AWS::Location::TrackerConsumer",
+      "Properties" : {
+          "ConsumerArn" : {
+            "Fn::GetAtt": ["LocationGeofence", "Arn"]
+          },
+          "TrackerName" : {
+            "Ref": "LocationTracker"
+          }
+        }
+    }
+  },
+  "Description": "{\"createdOn\":\"Mac\",\"createdBy\":\"Amplify\",\"createdWith\":\"7.6.2\",\"stackType\":\"custom-customCloudformation\",\"metadata\":{}}",
+  "Parameters": {
+    "ProjectName": {
+      "Default": "geotrack",
+      "Type": "String",
+      "Description": "A description to identify project"
+    },
+    "DefaultPricingPlan": {
+      "Default": "RequestBasedUsage",
+      "Type": "String",
+      "Description": "Location Pricing Default Plan"
+    },
+    "env": {
+      "Type": "String",
+      "Description": "The environment name. e.g. Dev, Test, or Production",
+      "Default": "NONE"
+    },
+    "authgeotrack4e545e25IdentityPoolId": {
+      "Type": "String",
+      "Description": "Input parameter describing IdentityPoolId attribute for auth/geotrack4e545e25 resource"
+    },
+    "authgeotrack4e545e25IdentityPoolName": {
+      "Type": "String",
+      "Description": "Input parameter describing IdentityPoolName attribute for auth/geotrack4e545e25 resource"
+    },
+    "authgeotrack4e545e25UserPoolId": {
+      "Type": "String",
+      "Description": "Input parameter describing UserPoolId attribute for auth/geotrack4e545e25 resource"
+    },
+    "authgeotrack4e545e25UserPoolArn": {
+      "Type": "String",
+      "Description": "Input parameter describing UserPoolArn attribute for auth/geotrack4e545e25 resource"
+    },
+    "authgeotrack4e545e25UserPoolName": {
+      "Type": "String",
+      "Description": "Input parameter describing UserPoolName attribute for auth/geotrack4e545e25 resource"
+    },
+    "authgeotrack4e545e25AppClientIDWeb": {
+      "Type": "String",
+      "Description": "Input parameter describing AppClientIDWeb attribute for auth/geotrack4e545e25 resource"
+    },
+    "authgeotrack4e545e25AppClientID": {
+      "Type": "String",
+      "Description": "Input parameter describing AppClientID attribute for auth/geotrack4e545e25 resource"
+    }
+  }
+}
