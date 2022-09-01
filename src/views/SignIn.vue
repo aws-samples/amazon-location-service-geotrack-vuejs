@@ -3,20 +3,22 @@
     <!-- <q-card square class="shadow-24" style="width:300px;height:485px;"> -->
     <div class="stealthMain">
       <div class="stealthLeft">
-        <h2>STEALTH CONNECT</h2>
-        <h5>Cyber Security Portal</h5>
-        <p>Introducing TOM SHAW’s latest creation: Stealth Connect. A two-part cyber-security world-first protecting
-          governments and enterprises from the end point to the board room.</p>
+        <h2 style="font-family: 'Agency Gothic CT Bold'; margin-bottom: 0px; font-size: 70px; font-weight: 500">STEALTH CONNECT</h2>
+        <h5 style="font-family: 'arial'; margin-top: 10px; font-size: 1.75rem;">Cyber Security Portal</h5>
+        <p style="font-size: 1.25rem">Introducing TOM SHAW’s latest creation: Stealth Connect. <br/> A two-part cyber-security world-first protecting
+          governments <br/> and enterprises from the end point to the board room.</p>
       </div>
       <div class="stealthRight">
-        <q-card square class="shadow-24" style="width:100%;padding: 50px 30px;">
-          <q-card-section class="bg-primary" style="background-color: grey !important;">
-            <h4 class="text-h6 text-center text-white q-my-sm">Login</h4>
+        <q-card-section style="margin-bottom: 20px">
+            <h4 class="text-h4 text-center q-my-sm">Login Your Account</h4>
           </q-card-section>
+
+        <q-card square class="shadow-24" style="width:100%;padding: 50px 30px;">
+
           <q-card-section>
             <q-form>
               <q-input
-                  rounded outlined
+                  square outlined
                   clearable
                   v-model.trim="form.username"
                   label="Email"
@@ -29,7 +31,7 @@
                 </template>
               </q-input>
               <q-input
-                  rounded outlined
+                  square outlined
                   clearable
                   v-model="form.password"
                   type="password"
@@ -49,7 +51,7 @@
           </q-card-section>
           <q-card-actions class="q-px-lg">
             <q-btn
-                unelevated
+                rounded unelevated
                 size="lg"
                 @click="onSubmit"
                 class="bg-primary half-width text-white"
@@ -133,7 +135,7 @@ export default {
 </script>
 <style scoped>
 .forPadding {
-  padding: 25px 120px;
+  padding: 120px 120px;
 }
 
 .stealthMain {
@@ -145,6 +147,10 @@ export default {
 
 .stealthLeft {
   width: 50%;
+}
+
+.inputText{
+  font-size: 32px;
 }
 
 .stealthRight {
