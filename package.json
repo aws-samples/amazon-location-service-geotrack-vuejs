@@ -12,7 +12,7 @@
     "@turf/turf": "^6.5.0",
     "aws-amplify": "^4.3.26",
     "aws-amplify-vue": "^2.1.5",
-    "aws-sdk": "^2.903.0",
+    "aws-sdk": "^2.1354.0",
     "axios": "^0.24.0",
     "core-js": "^3.6.5",
     "maplibre-gl": ">=1.14.0",
