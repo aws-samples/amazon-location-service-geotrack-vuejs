@@ -1,47 +1,76 @@
-type DeliveryAgent @model 
-@auth(rules: [
-  { allow:  private, provider: iam },
-  { allow:  private, provider: userPools }, 
-  { allow: owner }
-]){
-  id: ID!
-  fullName: String!
-  deliveryType: String!
-  device: Device @connection 
+type Coordinate {
+	lat: Float
+	lng: Float
 }
 
-type Device @model 
-@auth(rules: [
-  { allow:  private, provider: iam }, 
-  { allow:  private, provider: userPools }, 
-  { allow: owner }
-]){
-  id: ID!
-  deliveryAgentId: ID
-  deviceType: String
+input CoordinateInput {
+	lat: Float!
+	lng: Float!
 }
 
-type DeliveryInfo @model
-@auth(rules: [
-  { allow:  private, provider: iam }, 
-  { allow:  private, provider: userPools }, 
-  { allow: owner }
-]){
-  id: ID!
-  deliveryAgent: DeliveryAgent @connection
-  geoStart: Coordinate
-  geoEnd: Coordinate
-  duration: Float!
-  distance: Float!
-  geoFenceId: ID
-  userPhone: String
-  expireDate: Int!
-  status: String!
+type DeliveryAgent {
+	id: ID!
+	fullName: String!
+	deliveryType: String!
+	deviceID: String!
+	deviceType: String
+	createdAt: AWSTimestamp
+	updatedAt: AWSTimestamp
 }
 
-type Coordinate
-@aws_cognito_user_pools
-{
-  lat: Float!
-  lng: Float!
+type DeliveryInfo {
+	id: ID
+	agentId: String
+	geoStart: Coordinate
+	geoEnd: Coordinate
+	duration: Float
+	distance: Float
+	geoFenceId: ID
+	userPhone: String
+	expireDate: Int
+	status: String
+	createdAt: AWSTimestamp
+	updatedAt: AWSTimestamp
+}
+
+input DeliveryInfoInput {
+	id: ID!
+	agentId: String!
+	geoStart: CoordinateInput
+	geoEnd: CoordinateInput
+	duration: Float!
+	distance: Float!
+	geoFenceId: ID
+	userPhone: String
+	expireDate: Int
+	status: String
+	createdAt: AWSTimestamp
+	updatedAt: AWSTimestamp
+}
+
+input DeliveryAgentInput {
+  id: ID!
+	fullName: String!
+	deliveryType: String!
+	deviceID: String!
+	deviceType: String
+	createdAt: AWSTimestamp
+	updatedAt: AWSTimestamp
+}
+
+type Mutation {
+	addDeliveryAgent(input: DeliveryAgentInput): DeliveryAgent
+	addDeliveryInfo(input: DeliveryInfoInput): DeliveryInfo
+}
+
+type Query {
+	getDeliveryAgent(id: ID!): DeliveryAgent
+	getDeliveryInfo(id: ID!): DeliveryInfo
+	listDeliveryAgents: [DeliveryAgent]
+	listDeliveryInfos: [DeliveryInfo]
+}
+
+schema {
+	query: Query
+	mutation: Mutation
 }

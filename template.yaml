@@ -1,13 +1,13 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-    "GeoTrack Application \n"
+    "GeoTrack Application v2\n"
 Globals:
   Function:
     AutoPublishAlias: live
     Handler: index.handler
     MemorySize: 256
-    Runtime: python3.8
+    Runtime: python3.10
     Timeout: 120
     Tracing: Active    
   
@@ -18,105 +18,213 @@ Parameters:
     Description: A description to identify project
   EnvironmentName:
     Type: String
-    Default: main
+    Default: dev
     Description: A description to identify environment (e.g. dev, prod)
-  CorsOrigin:
-    Type: String
-    Default: "'*'"
-  CorsHeaders:
-    Type: String
-    Default: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-  CorsMethods:
-    Type: String
-    Default: "'OPTIONS,POST'"
 
 Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${ProjectName}-${EnvironmentName}-userpool
+      Policies:
+        PasswordPolicy: 
+          MinimumLength: 8
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+        - AttributeDataType: String
+          Name: family_name
+          Required: true
+        - AttributeDataType: String
+          Name: given_name
+          Required: true
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: !Sub ${ProjectName}-${EnvironmentName}-client
+      GenerateSecret: false
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties: 
+      Domain: !Join ['-', ['geotrack', !Select [1, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub ${ProjectName}-${EnvironmentName}-identity
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders: 
+        - ClientId: !Ref CognitoUserPoolClient
+          ProviderName: !GetAtt CognitoUserPool.ProviderName
+      
+  # Create a role for unauthorized acces to AWS resources. Very limited access. Only allows users in the previously created Identity Pool
+  CognitoUnAuthorizedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal: 
+              Federated: "cognito-identity.amazonaws.com"
+            Action: 
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': unauthenticated
+
+  # Create a role for authorized acces to AWS resources. Control what your user can access. This example only allows Lambda invokation
+  # Only allows users in the previously created Identity Pool
+  CognitoAuthorizedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal: 
+              Federated: "cognito-identity.amazonaws.com"
+            Action: 
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+  
+  # Assigns the roles to the Identity Pool
+  IdentityPoolRoleMapping:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref CognitoIdentityPool
+      Roles:
+        authenticated: !GetAtt CognitoAuthorizedRole.Arn
+        unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
+
+  DynamoDBTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: !Sub ${ProjectName}-${EnvironmentName}-table
+
+  GraphQLAPI:
+    Type: AWS::Serverless::GraphQLApi
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-graphql
+      SchemaUri: ./schema.graphql
+      Auth:
+        Type: "AMAZON_COGNITO_USER_POOLS"
+        UserPool:
+          UserPoolId: !Ref CognitoUserPool
+          AwsRegion: !Ref "AWS::Region"
+          DefaultAction: DENY
+      DataSources:
+        DynamoDb:
+          PostsDataSource:
+            TableName: !Ref DynamoDBTable
+            TableArn: !GetAtt DynamoDBTable.Arn
+
+  ApiGw:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-api
+      StageName: v1
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: "'*'"
+        AllowMethods: "'OPTIONS,POST,GET,PUT,DELETE'"
+      Auth:
+        DefaultAuthorizer: TokenAuthorizer
+        Authorizers:
+          TokenAuthorizer:
+            UserPoolArn: !GetAtt CognitoUserPool.Arn
+        AddDefaultAuthorizerToCorsPreflight: False
+
+  S3WebAppBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration: 
+          - ServerSideEncryptionByDefault: 
+              SSEAlgorithm: AES256
+    DeletionPolicy: Delete
+
+  S3WebAppBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3WebAppBucket      
+      PolicyDocument:
+        Statement:
+        - Action: s3:GetObject
+          Effect: Allow
+          Resource: !Sub ${S3WebAppBucket.Arn}/*
+          Principal:
+            Service: cloudfront.amazonaws.com
+          Condition:
+            StringEquals:
+              AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFront}
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties: 
+      OriginAccessControlConfig:
+        Name: !Sub ${ProjectName}-${EnvironmentName}-OAC
+        Description: Default Origin Access Control
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+        
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties: 
+      DistributionConfig:
+        Origins:
+        - Id: S3Origin
+          DomainName: !GetAtt S3WebAppBucket.DomainName
+          S3OriginConfig:
+            OriginAccessIdentity: ''
+          OriginAccessControlId: !GetAtt OriginAccessControl.Id
+        Enabled: true
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+
   CoreLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub "${ProjectName}-${EnvironmentName}-corelayer"
-      Description: requests 
-      ContentUri: ./layer/layer.zip
+      Description: requests
+      ContentUri: ./layers/requests
       CompatibleRuntimes:
-        - python3.8
-        - python3.7
-        - python3.6
+        - python3.10
       RetentionPolicy: Delete
-
-  LaunchDeliveryFleetProxyResource:
-    Type: 'AWS::ApiGateway::Resource'
-    Properties:
-      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}'
-      ParentId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiParentId:1}}'
-      PathPart: 'launch_fleet'
-
-  LaunchDeliveryFleetProxyMethod:
-    Type: 'AWS::ApiGateway::Method'
-    Properties:
-      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}'
-      ResourceId: !Ref LaunchDeliveryFleetProxyResource
-      HttpMethod: POST
-      AuthorizationType: COGNITO_USER_POOLS
-      AuthorizerId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiAuthId:1}}'
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub >-
-          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LaunchDeliveryFleet.Arn}/invocations
-        IntegrationResponses:
-          - StatusCode: 200
-            ResponseTemplates:
-              application/json: $input.json('$')
-            ResponseParameters:
-              method.response.header.Access-Control-Allow-Headers: !Ref CorsHeaders
-              method.response.header.Access-Control-Allow-Methods: !Ref CorsMethods
-              method.response.header.Access-Control-Allow-Origin: !Ref CorsOrigin
-        RequestTemplates:
-          application/json: $input.json('$')
-      MethodResponses:
-        - ResponseParameters:
-            method.response.header.Access-Control-Allow-Headers: true
-            method.response.header.Access-Control-Allow-Methods: true
-            method.response.header.Access-Control-Allow-Origin: true
-          StatusCode: '200'
-  
-  
-  LaunchDeliveryFleetOptionMethod:
-    Type: "AWS::ApiGateway::Method"
-    Properties:
-      RestApiId: !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}'
-      ResourceId: !Ref LaunchDeliveryFleetProxyResource
-      AuthorizationType: NONE
-      HttpMethod: OPTIONS
-      Integration:
-        Type: MOCK
-        IntegrationResponses:
-          - ResponseParameters:
-              method.response.header.Access-Control-Allow-Headers: !Ref CorsHeaders
-              method.response.header.Access-Control-Allow-Methods: !Ref CorsMethods
-              method.response.header.Access-Control-Allow-Origin: !Ref CorsOrigin
-            ResponseTemplates:
-              application/json: ''
-            StatusCode: '200'
-        PassthroughBehavior: WHEN_NO_MATCH
-        RequestTemplates:
-          application/json: '{"statusCode": 200}'
-      MethodResponses:
-        - ResponseModels:
-            application/json: 'Empty'
-          ResponseParameters:
-            method.response.header.Access-Control-Allow-Headers: false
-            method.response.header.Access-Control-Allow-Methods: false
-            method.response.header.Access-Control-Allow-Origin: false
-          StatusCode: '200'
-      
-  LaunchDeliveryFleetInvokePermissions:
-    Type: "AWS::Lambda::Permission"
-    Properties: 
-      Action: "lambda:InvokeFunction"        
-      FunctionName: !GetAtt LaunchDeliveryFleet.Arn
-      Principal: "apigateway.amazonaws.com"
-      SourceArn: !Join [ "", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Sub '{{resolve:ssm:/amplify/${ProjectName}/apiId:1}}', "/*/*/*" ] ] 
+    Metadata:
+      BuildMethod: python3.10
 
   LaunchDeliveryFleet:
     Type: AWS::Serverless::Function 
@@ -125,6 +233,13 @@ Resources:
       CodeUri: ./lambdas/simulation/launchDeliveryFleet  
       Layers:
         - !Ref CoreLayer
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGw
+            Path: /launch
+            Method: POST
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - SSMParameterReadPolicy:
@@ -145,7 +260,7 @@ Resources:
           PUSH_VEHICLE_LAMBDA_NAME: !Ref PushVehiclePosition
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
-          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/appsyncUrl:1}}'
+          APPSYNC_URL: !GetAtt GraphQLAPI.GraphQLUrl
 
   PushVehiclePosition:
     Type: AWS::Serverless::Function 
@@ -220,7 +335,7 @@ Resources:
           APPLICATION_ID: !Ref PinpointProject
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
-          APPSYNC_URL: !Sub '{{resolve:ssm:/amplify/${ProjectName}/appsyncUrl:1}}'
+          APPSYNC_URL: !GetAtt GraphQLAPI.GraphQLUrl
 
 
   GeoRule:
@@ -289,8 +404,6 @@ Resources:
           PROJECT_ENV: !Ref EnvironmentName
 
 Outputs:
-  EventBus:
-      Value: !Ref EventBus
   LaunchDeliveryFleet:
       Value: !GetAtt LaunchDeliveryFleet.Arn
   PushVehiclePosition:
