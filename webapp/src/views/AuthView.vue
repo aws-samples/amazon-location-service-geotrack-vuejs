@@ -24,6 +24,6 @@
 <template>
   <authenticator 
     :login-mechanisms="['email']"
-    :sign-up-attributes="['gn','sn']"
+    :sign-up-attributes="['email','given_name','family_name']"
     ></authenticator>
 </template>

@@ -30,4 +30,4 @@ coverage
 # Code
 *.env
 samconfig.toml
-
+.aws-sam

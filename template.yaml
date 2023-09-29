@@ -104,7 +104,39 @@ Resources:
                   Ref: CognitoIdentityPool
               'ForAnyValue:StringLike':
                 'cognito-identity.amazonaws.com:amr': authenticated
-  
+      Policies: 
+        - PolicyName: Geo
+          PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action: 
+                    - "geo:GetMapStyleDescriptor"
+                    - "geo:GetMapGlyphs"
+                    - "geo:GetMapSprites"
+                    - "geo:GetMapTile"                    
+                  Resource: !GetAtt Map.Arn
+                - Effect: Allow
+                  Action: 
+                    - "geo:BatchGetDevicePosition"
+                    - "geo:GetDevicePosition"
+                    - "geo:GetDevicePositionHistory"                    
+                  Resource: !GetAtt Tracker.Arn
+                - Effect: Allow
+                  Action: 
+                    - "geo:ListGeofences"
+                    - "geo:GetGeofence"                    
+                  Resource: !GetAtt GeoFenceCollection.Arn
+                - Effect: Allow
+                  Action: 
+                    - "geo:SearchPlaceIndexForPosition"
+                    - "geo:SearchPlaceIndexForText"                    
+                  Resource: !GetAtt GeoFenceCollection.Arn
+                - Effect: Allow
+                  Action: 
+                    - "geo:CalculateRoute"                                   
+                  Resource: !GetAtt GeoFenceCollection.Arn
+
   # Assigns the roles to the Identity Pool
   IdentityPoolRoleMapping:
     Type: AWS::Cognito::IdentityPoolRoleAttachment
@@ -114,10 +146,53 @@ Resources:
         authenticated: !GetAtt CognitoAuthorizedRole.Arn
         unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
 
-  DynamoDBTable:
-    Type: AWS::Serverless::SimpleTable
+  DriversTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub ${ProjectName}-${EnvironmentName}-table
+      TableName: !Sub ${ProjectName}-${EnvironmentName}-Drivers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiration
+        Enabled: true
+
+  TripsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${ProjectName}-${EnvironmentName}-Trips
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: createdAt
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiration
+        Enabled: true
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "statusSgi"
+          KeySchema: 
+            - 
+              AttributeName: status
+              KeyType: "HASH"
+            - 
+              AttributeName: id
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: "ALL"
 
   GraphQLAPI:
     Type: AWS::Serverless::GraphQLApi
@@ -129,12 +204,98 @@ Resources:
         UserPool:
           UserPoolId: !Ref CognitoUserPool
           AwsRegion: !Ref "AWS::Region"
-          DefaultAction: DENY
+          DefaultAction: ALLOW
       DataSources:
         DynamoDb:
-          PostsDataSource:
-            TableName: !Ref DynamoDBTable
-            TableArn: !GetAtt DynamoDBTable.Arn
+          DriversTable:
+            TableName: !Ref DriversTable
+            TableArn: !GetAtt DriversTable.Arn
+          TripsTable:
+            TableName: !Ref TripsTable
+            TableArn: !GetAtt TripsTable.Arn
+      Functions:
+        allDrivers:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/allDrivers.js
+        allTrips:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: TripsTable
+          CodeUri: ./webapp/src/resolvers/allTrips.js
+        statusTrips:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: TripsTable
+          CodeUri: ./webapp/src/resolvers/statusTrips.js
+        hydrateStatusTrips:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/hydrateStatusTrips.js
+        getTrip:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: TripsTable
+          CodeUri: ./webapp/src/resolvers/getTrip.js
+        getDriver:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/getDriver.js
+        addDriver:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/addDriver.js
+        addTrip:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: TripsTable
+          CodeUri: ./webapp/src/resolvers/addTrip.js
+      Resolvers:
+        Mutation:
+          addDriver:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - addDriver
+          addTrip:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - addTrip
+        Query:
+          allTrips:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - allTrips
+          statusTrips:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - statusTrips
+              - hydrateStatusTrips
+          allDrivers:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - allDrivers
 
   ApiGw:
     Type: AWS::Serverless::Api
@@ -211,7 +372,7 @@ Resources:
             - OPTIONS
             TargetOriginId: S3Origin
             ForwardedValues:
-              QueryString: 'false'
+              QueryString: false
               Cookies:
                 Forward: none
 
@@ -338,6 +499,48 @@ Resources:
           APPSYNC_URL: !GetAtt GraphQLAPI.GraphQLUrl
 
 
+  GeoFenceCollection:
+    Type: AWS::Location::GeofenceCollection
+    Properties: 
+      CollectionName: !Sub ${ProjectName}-${EnvironmentName}-GeoFence
+
+  RouteCalculation:
+    Type: AWS::Location::RouteCalculator
+    Properties: 
+      CalculatorName: !Sub ${ProjectName}-${EnvironmentName}-RouteCalculator
+      DataSource: Esri
+      PricingPlan: RequestBasedUsage
+
+  Map:
+    Type: AWS::Location::Map
+    Properties: 
+      Configuration: 
+        Style: VectorEsriStreets
+      MapName: !Sub ${ProjectName}-${EnvironmentName}-Map
+      PricingPlan: RequestBasedUsage
+
+  PlaceIndex:
+    Type: AWS::Location::PlaceIndex
+    Properties: 
+      DataSource: Esri
+      DataSourceConfiguration: 
+        IntendedUse: "SingleUse"
+      IndexName: !Sub ${ProjectName}-${EnvironmentName}-PlaceIndex
+      PricingPlan: RequestBasedUsage
+
+  Tracker:
+    Type: AWS::Location::Tracker
+    Properties: 
+      PositionFiltering: TimeBased
+      TrackerName: !Sub ${ProjectName}-${EnvironmentName}-Tracker
+
+  TrackerConsumer:
+    Type: AWS::Location::TrackerConsumer
+    DependsOn: GeoFenceCollection
+    Properties: 
+      ConsumerArn: !GetAtt GeoFenceCollection.Arn
+      TrackerName: !Ref Tracker
+
   GeoRule:
     Type: AWS::Events::Rule
     Properties:       
@@ -354,10 +557,7 @@ Resources:
             - "ENTER"
       Targets: 
       - 
-        Arn: 
-          Fn::GetAtt: 
-            - "EventBridgeResponse"
-            - "Arn"
+        Arn: !GetAtt EventBridgeResponse.Arn
         Id: "geoTrackV1"
 
   PermissionForEventsToInvokeLambda: 
@@ -366,12 +566,8 @@ Resources:
       FunctionName: !Ref "EventBridgeResponse"
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
-      SourceArn: 
-        Fn::GetAtt: 
-          - "GeoRule"
-          - "Arn"
+      SourceArn: !GetAtt GeoRule.Arn
       
-
   IoTUpdateTracker:
     Type: AWS::Serverless::Function 
     Properties:
@@ -404,7 +600,64 @@ Resources:
           PROJECT_ENV: !Ref EnvironmentName
 
 Outputs:
+  S3WebAppBucket:
+    Description: S3 Web App Name
+    Value: !Ref S3WebAppBucket
+    
+  IdentityPoolId:
+    Description: Cognito IdentityPool Id
+    Value: !Ref CognitoIdentityPool
+  
+  CognitoUserPoolClientId:
+    Description: Cognito UserPool ClientId
+    Value: !Ref CognitoUserPoolClient
+
+  CognitoUserPoolId:
+    Description: Cognito UserPool Id
+    Value: !Ref CognitoUserPool
+
+  CognitoDomainName:
+    Description: Cognito DomainName
+    Value: !Ref UserPoolDomain
+
+  ApiId:
+    Description: API Id
+    Value: !Ref ApiGw
+
+  CloudFrontUrl:
+    Description: CloudFront Url
+    Value: !GetAtt CloudFront.DomainName
+
+  AppSyncUrl: 
+    Description: AppSync Url
+    Value: !GetAtt GraphQLAPI.GraphQLUrl
+
+  AwsRegion:
+    Description: AWS Region Deployed
+    Value: !Sub ${AWS::Region}
+
+  GeoMap:
+    Description: Amazon Location Map
+    Value: !Ref Map
+
+  GeoRouteCalculation:
+    Description: Amazon Location Route
+    Value: !Ref RouteCalculation
+
+  GeoPlaceIndex:
+    Description: Amazon Location PlaceIndex
+    Value: !Ref PlaceIndex
+
+  GeoTracker:
+    Description: Amazon Location Tracker
+    Value: !Ref Tracker
+
+  GeoFence:
+    Description: Amazon Location GeoFenceCollection
+    Value: !Ref GeoFenceCollection
+
   LaunchDeliveryFleet:
       Value: !GetAtt LaunchDeliveryFleet.Arn
+
   PushVehiclePosition:
       Value: !GetAtt PushVehiclePosition.Arn

@@ -21,4 +21,5 @@ amplifytools.xcconfig
 amplify/team-provider-info.json
 .secret-*
 samconfig.toml
+queries.txt
 .env*

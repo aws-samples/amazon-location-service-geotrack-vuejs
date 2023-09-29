@@ -4,23 +4,25 @@ type Coordinate {
 }
 
 input CoordinateInput {
-	lat: Float!
-	lng: Float!
+	lat: Float
+	lng: Float
 }
 
-type DeliveryAgent {
-	id: ID!
-	fullName: String!
-	deliveryType: String!
-	deviceID: String!
-	deviceType: String
-	createdAt: AWSTimestamp
-	updatedAt: AWSTimestamp
-}
-
-type DeliveryInfo {
+type Driver {
 	id: ID
-	agentId: String
+	email: AWSEmail
+	fullName: String
+	deliveryType: String
+	deviceId: String
+	deviceType: String
+	status: DriverStatus
+	createdAt: AWSDateTime
+	updatedAt: AWSDateTime	
+}
+
+type Trip {
+	id: ID
+	driver: Driver
 	geoStart: Coordinate
 	geoEnd: Coordinate
 	duration: Float
@@ -28,46 +30,73 @@ type DeliveryInfo {
 	geoFenceId: ID
 	userPhone: String
 	expireDate: Int
-	status: String
-	createdAt: AWSTimestamp
-	updatedAt: AWSTimestamp
+	status: TripStatus
+	createdAt: AWSDateTime
+	updatedAt: AWSDateTime
 }
 
-input DeliveryInfoInput {
-	id: ID!
-	agentId: String!
+input DriverInput {
+	id: ID
+	email: AWSEmail
+	fullName: String
+	deliveryType: String
+	deviceId: String
+	deviceType: String
+	status: DriverStatus
+	createdAt: AWSDateTime
+	updatedAt: AWSDateTime	
+}
+
+input TripInput {
+	id: ID
+	driver: DriverInput
 	geoStart: CoordinateInput
 	geoEnd: CoordinateInput
-	duration: Float!
-	distance: Float!
+	duration: Float
+	distance: Float
 	geoFenceId: ID
 	userPhone: String
 	expireDate: Int
-	status: String
+	status: TripStatus
 	createdAt: AWSTimestamp
 	updatedAt: AWSTimestamp
 }
 
-input DeliveryAgentInput {
-  id: ID!
-	fullName: String!
-	deliveryType: String!
-	deviceID: String!
-	deviceType: String
-	createdAt: AWSTimestamp
-	updatedAt: AWSTimestamp
+enum TripStatus {  
+  completed
+  inroute
+  accepted
+  error
+}
+
+enum DriverStatus {  
+  active
+  inactive
+  banned
 }
 
 type Mutation {
-	addDeliveryAgent(input: DeliveryAgentInput): DeliveryAgent
-	addDeliveryInfo(input: DeliveryInfoInput): DeliveryInfo
+	addDriver(input: DriverInput): Driver
+	addTrip(input: TripInput): Trip
 }
 
 type Query {
-	getDeliveryAgent(id: ID!): DeliveryAgent
-	getDeliveryInfo(id: ID!): DeliveryInfo
-	listDeliveryAgents: [DeliveryAgent]
-	listDeliveryInfos: [DeliveryInfo]
+	getDriver(id: ID!): Driver
+	getTrip(id: ID!): Trip
+	getDriverTrips(id: ID!): [Trip]
+	allDrivers(limit: Int, nextToken: String): PaginatedDrivers
+	allTrips(limit: Int, nextToken: String): PaginatedTrips
+	statusTrips(status: TripStatus, limit: Int, nextToken: String): PaginatedTrips
+}
+
+type PaginatedDrivers {
+    drivers: [Driver!]!
+    nextToken: String
+}
+
+type PaginatedTrips {
+    trips: [Trip!]!
+    nextToken: String
 }
 
 schema {
