@@ -1,11 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import DefaultLayout from '../layouts/DefaultLayout.vue'
 import SimpleLayout from '../layouts/SimpleLayout.vue'
 import HomeView from '../views/HomeView.vue'
 import AuthView from '../views/AuthView.vue'
-import Agents from '../views/AgentsView.vue'
-import Trips from '../views/TripsView.vue'
+import DriversView from '../views/DriversView.vue'
+import TripsView from '../views/TripsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,13 +20,13 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
-          path: "agents",
-          component: Agents,
+          path: "drivers",
+          component: DriversView,
           meta: { requiresAuth: true }
         },
         {
           path: "trips",
-          component: Trips,
+          component: TripsView,
           meta: { requiresAuth: true }
         }     
       ]

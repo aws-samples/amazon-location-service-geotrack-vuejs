@@ -8,11 +8,10 @@ export const useUserStore = defineStore("user", {
 
   getters: { 
     isAuthenticated: (state) => !!state.user,
-    credentials: (state) => state.user?.credentials,    
     token: (state) => state.user?.signInUserSession.idToken.jwtToken,
     userId: (state) => state.user?.attributes.sub,
     email: (state) => state.user?.attributes.email,
-    fullname: (state) => state.user?.attributes.give_name + " " + state.user?.attributes.family_name,
+    fullname: (state) => state.user?.attributes.given_name + " " + state.user?.attributes.family_name,
   },
   actions: {
     async getSession() {

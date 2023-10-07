@@ -3,11 +3,9 @@ import { util } from '@aws-appsync/utils'
 export function request(ctx) {
 	const values = ctx.arguments.input
 	const keys = { id: ctx.args.input.id ?? util.autoId(), email: ctx.args.input.email }
-
-    const timeStamp = util.time.nowFormatted("yyyy-MM-dd'T'HH:mm:ssZ")
     
-    values.createdAt = timeStamp
-	values.updatedAt = timeStamp
+    values.createdAt = util.time.nowISO8601()
+	values.updatedAt = util.time.nowISO8601()
 
 	return {
 		operation: 'PutItem',

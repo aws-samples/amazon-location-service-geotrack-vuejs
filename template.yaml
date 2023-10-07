@@ -131,11 +131,11 @@ Resources:
                   Action: 
                     - "geo:SearchPlaceIndexForPosition"
                     - "geo:SearchPlaceIndexForText"                    
-                  Resource: !GetAtt GeoFenceCollection.Arn
+                  Resource: !GetAtt PlaceIndex.Arn
                 - Effect: Allow
                   Action: 
                     - "geo:CalculateRoute"                                   
-                  Resource: !GetAtt GeoFenceCollection.Arn
+                  Resource: !GetAtt RouteCalculation.Arn
 
   # Assigns the roles to the Identity Pool
   IdentityPoolRoleMapping:
@@ -232,12 +232,12 @@ Resources:
             Version: "1.0.0"
           DataSource: TripsTable
           CodeUri: ./webapp/src/resolvers/statusTrips.js
-        hydrateStatusTrips:
+        hydrateTrips:
           Runtime:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: DriversTable
-          CodeUri: ./webapp/src/resolvers/hydrateStatusTrips.js
+          CodeUri: ./webapp/src/resolvers/hydrateTrips.js
         getTrip:
           Runtime:
             Name: APPSYNC_JS
@@ -283,13 +283,14 @@ Resources:
               Version: "1.0.0"
             Pipeline:
               - allTrips
+              - hydrateTrips
           statusTrips:
             Runtime:
               Name: APPSYNC_JS
               Version: "1.0.0"
             Pipeline:
               - statusTrips
-              - hydrateStatusTrips
+              - hydrateTrips
           allDrivers:
             Runtime:
               Name: APPSYNC_JS

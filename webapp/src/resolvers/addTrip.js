@@ -3,7 +3,7 @@ import { util } from '@aws-appsync/utils'
 export function request(ctx) {
 	const values = ctx.arguments.input
 
-    const timeStamp = util.time.nowFormatted("yyyy-MM-dd'T'HH:mm:ssZ")
+    const timeStamp = util.time.nowISO8601()
 
     const keys = { id: ctx.args.input.id ?? util.autoId(), createdAt: timeStamp }
 

@@ -1,4 +1,19 @@
 
+export const createDriver = /* GraphQL */ `
+mutation CreateDriver (
+  $input: DriverInput!
+  ) {
+  addDriver(input: $input) {
+    id
+    fullName
+    email
+    createdAt
+    updatedAt 
+  }
+}
+`;
+
+
 export const createDeliveryAgent = /* GraphQL */ `
   mutation CreateDeliveryAgent(
     $input: CreateDeliveryAgentInput!

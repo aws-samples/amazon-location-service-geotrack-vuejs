@@ -23,12 +23,14 @@ type Driver {
 type Trip {
 	id: ID
 	driver: Driver
+	labelStart: String
 	geoStart: Coordinate
+	labelEnd: String
 	geoEnd: Coordinate
 	duration: Float
 	distance: Float
 	geoFenceId: ID
-	userPhone: String
+	clientPhone: String
 	expireDate: Int
 	status: TripStatus
 	createdAt: AWSDateTime
@@ -67,6 +69,7 @@ enum TripStatus {
   inroute
   accepted
   error
+  onhold
 }
 
 enum DriverStatus {  
