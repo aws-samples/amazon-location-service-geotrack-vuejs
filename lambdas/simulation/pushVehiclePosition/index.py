@@ -17,27 +17,10 @@ logger.setLevel(logging.INFO)
 iot_topic = os.getenv('IOT_TOPIC')
 project_name = os.getenv('PROJECT_NAME')
 project_env = os.getenv('PROJECT_ENV')
+ROUTE_NAME = os.getenv('ROUTE_NAME')
 
 location = boto3.client('location')
 iot = boto3.client('iot-data')
-
-ssm = boto3.client('ssm')
-
-def GetSsmParam(paramKey, isEncrypted):
-    try:
-        ssmResult = ssm.get_parameter(
-            Name=paramKey,
-            WithDecryption=isEncrypted
-        )
-
-        if (ssmResult["ResponseMetadata"]["HTTPStatusCode"] == 200):
-            return ssmResult["Parameter"]["Value"]
-        else:
-            return ""
-
-    except Exception as e:
-        logger.error(str(e))
-        return ""
 
 def route_calculation(departure, destination):
 
@@ -45,7 +28,7 @@ def route_calculation(departure, destination):
     routeName = GetSsmParam(ssmParam, False)
 
     return location.calculate_route(
-    CalculatorName=routeName,
+    CalculatorName=ROUTE_NAME,
     DeparturePosition=[departure['lng'], departure['lat']],
     DestinationPosition=[destination['lng'], destination['lat']],
     DepartNow=True,

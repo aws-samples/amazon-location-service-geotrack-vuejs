@@ -125,33 +125,22 @@ async function removeRow() {
 <template>
   <div>
     <Header />
-    <v-btn-toggle>
-      <v-btn
-        size="small"
-        variant="outlined"
-        prepend-icon="mdi-plus-circle-outline"
-        @click="buttonAddRow = true"
-      >
+    
+
+    <v-container>
+      <v-btn-toggle>
+      <v-btn size="small" variant="outlined" prepend-icon="mdi-plus-circle-outline" @click="buttonAddRow = true">
         Add User
       </v-btn>
-      <v-btn
-        size="small"
-        variant="outlined"
-        prepend-icon="mdi-delete-circle-outline"
-        @click="buttonRemoveRow"
-      >
+      <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="buttonRemoveRow">
         Del User
       </v-btn>
     </v-btn-toggle>
-
-    <v-data-table
-      :headers="dataHeaders"
-      :items="driversData"
-      item-value="name"
-      class="elevation-1"
-      show-select
-      density="compact"
-    ></v-data-table>
+      <v-card>
+        <v-data-table :headers="dataHeaders" :items="driversData" item-value="name" class="elevation-1" show-select
+          density="compact"></v-data-table>
+      </v-card>
+    </v-container>
 
     <v-row justify="center">
       <v-dialog v-model="buttonAddRow" width="500">
@@ -163,107 +152,58 @@ async function removeRow() {
 
             <v-card-text>
               <v-container>
-                <v-text-field
-                  label="Full Name"
-                  :rules="[
-                    () => !!driver.fullName || 'This field is required',
-                    () =>
-                      (!!driver.fullName && driver.fullName.length >= 5) ||
-                      'Full Name must contain 5 or more characters',
-                  ]"
-                  v-model="driver.fullName"
-                  ref="fullName"
-                  @keyup.enter="prompt = false"
-                />
+                <v-text-field label="Full Name" :rules="[
+                  () => !!driver.fullName || 'This field is required',
+                  () =>
+                    (!!driver.fullName && driver.fullName.length >= 5) ||
+                    'Full Name must contain 5 or more characters',
+                ]" v-model="driver.fullName" ref="fullName" @keyup.enter="prompt = false" />
 
-                <v-text-field
-                  label="Email"
-                  :rules="[
-                    () => !!driver.email || 'This field is required',
-                    () =>
-                      (!!driver.email && driver.email.length >= 5) ||
-                      'Full Name must contain 5 or more characters',
-                    () =>
-                      /^[^@]+@\w+(\.\w+)+\w$/.test(driver.email) ||
-                      'Invalid Email',
-                  ]"
-                  v-model="driver.email"
-                  ref="email"
-                  @keyup.enter="prompt = false"
-                />
+                <v-text-field label="Email" :rules="[
+                  () => !!driver.email || 'This field is required',
+                  () =>
+                    (!!driver.email && driver.email.length >= 5) ||
+                    'Full Name must contain 5 or more characters',
+                  () =>
+                    /^[^@]+@\w+(\.\w+)+\w$/.test(driver.email) ||
+                    'Invalid Email',
+                ]" v-model="driver.email" ref="email" @keyup.enter="prompt = false" />
 
-                <v-select
-                  v-model="driver.deliveryType"
-                  ref="deliveryType"
-                  :rules="[
-                    (val) =>
-                      (val !== null && val !== '') ||
-                      'Please select a delivery type',
-                  ]"
-                  :items="optionsDelivery"
-                  label="Delivery Type"
-                />
+                <v-select v-model="driver.deliveryType" ref="deliveryType" :rules="[
+                  (val) =>
+                    (val !== null && val !== '') ||
+                    'Please select a delivery type',
+                ]" :items="optionsDelivery" label="Delivery Type" />
 
-                <v-select
-                  v-model="driver.deviceType"
-                  ref="deviceType"
-                  :rules="[
-                    (val) =>
-                      (val !== null && val !== '') ||
-                      'Please select a device type',
-                  ]"
-                  :items="optionsDevice"
-                  label="Device Type"
-                />
+                <v-select v-model="driver.deviceType" ref="deviceType" :rules="[
+                  (val) =>
+                    (val !== null && val !== '') ||
+                    'Please select a device type',
+                ]" :items="optionsDevice" label="Device Type" />
 
-                <v-text-field
-                  label="Device Id"
-                  v-model="driver.deviceId"
-                  ref="deviceId"
-                  :rules="[
-                    () => !!driver.deviceId || 'This field is required',
-                    () =>
-                      (!!driver.deviceId && driver.deviceId.length >= 5) ||
-                      'Full Name must contain 5 or more characters',
-                    () =>
-                      (driver.deviceId || '').indexOf(' ') < 0 ||
-                      'No spaces are allowed',
-                    // () => !(this.data.includes(deviceId)) || 'DeviceId is not unique',
-                  ]"
-                  @keyup.enter="prompt = false"
-                />
+                <v-text-field label="Device Id" v-model="driver.deviceId" ref="deviceId" :rules="[
+                  () => !!driver.deviceId || 'This field is required',
+                  () =>
+                    (!!driver.deviceId && driver.deviceId.length >= 5) ||
+                    'Full Name must contain 5 or more characters',
+                  () =>
+                    (driver.deviceId || '').indexOf(' ') < 0 ||
+                    'No spaces are allowed',
+                  // () => !(this.data.includes(deviceId)) || 'DeviceId is not unique',
+                ]" @keyup.enter="prompt = false" />
               </v-container>
             </v-card-text>
 
             <v-card-actions align="right" class="text-primary">
-              <v-btn
-                class="text-none"
-                color="#4f545c"
-                prepend-icon="mdi-check"
-                variant="flat"
-                type="submit"
-              >
+              <v-btn class="text-none" color="#4f545c" prepend-icon="mdi-check" variant="flat" type="submit">
                 Submit
               </v-btn>
 
-              <v-btn
-                border
-                class="text-none"
-                color="#2f3136"
-                prepend-icon="mdi-cancel"
-                variant="text"
-                @click="buttonAddRow = false"
-              >
+              <v-btn border class="text-none" color="#2f3136" prepend-icon="mdi-cancel" variant="text"
+                @click="buttonAddRow = false">
                 Cancel
               </v-btn>
-              <v-btn
-                type="reset"
-                border
-                class="text-none"
-                color="#2f3136"
-                prepend-icon="mdi-autorenew"
-                variant="text"
-              >
+              <v-btn type="reset" border class="text-none" color="#2f3136" prepend-icon="mdi-autorenew" variant="text">
                 Reset
               </v-btn>
             </v-card-actions>
@@ -280,12 +220,7 @@ async function removeRow() {
         </v-card-text>
 
         <v-card-actions align="right">
-          <v-btn
-            flat
-            label="No"
-            color="black"
-            @click="buttonRemoveRow = false"
-          />
+          <v-btn flat label="No" color="black" @click="buttonRemoveRow = false" />
           <v-btn flat label="Yes" color="black" @click="removeRow" />
         </v-card-actions>
       </v-card>

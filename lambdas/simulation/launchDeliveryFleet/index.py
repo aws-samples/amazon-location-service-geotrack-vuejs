@@ -11,7 +11,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 lambda_client = boto3.client('lambda')
-ssm = boto3.client('ssm')
 appsync = boto3.client('appsync')
 
 appsync_url = os.getenv('APPSYNC_URL')
@@ -65,22 +64,6 @@ graphqlQuery="""
     }
   }
     """
-
-def getSsmParam(paramKey, isEncrypted):
-    try:
-        ssmResult = ssm.get_parameter(
-            Name=paramKey,
-            WithDecryption=isEncrypted
-        )
-
-        if (ssmResult["ResponseMetadata"]["HTTPStatusCode"] == 200):
-            return ssmResult["Parameter"]["Value"]
-        else:
-            return ""
-
-    except Exception as e:
-        logger.error(str(e))
-        return ""
 
 def setProxyResponse(data):
         response = {}

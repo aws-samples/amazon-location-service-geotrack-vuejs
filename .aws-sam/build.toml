@@ -28,15 +28,6 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["EventBridgeResponse"]
 
-[function_build_definitions.eb9878b0-d435-41f6-bc32-3c7006f2adf8]
-codeuri = "/Users/artrodri/dev/amazon-location-service-geotrack-vuejs/lambdas/iot"
-runtime = "python3.10"
-architecture = "x86_64"
-handler = "index.handler"
-manifest_hash = ""
-packagetype = "Zip"
-functions = ["IoTUpdateTracker"]
-
 [layer_build_definitions.8de06272-f01a-419e-8fc7-8485fe2a1976]
 layer_name = "CoreLayer"
 codeuri = "/Users/artrodri/dev/amazon-location-service-geotrack-vuejs/layers/requests"

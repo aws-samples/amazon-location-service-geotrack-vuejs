@@ -23,7 +23,7 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  params: {
+  routeParams: {
     type: Object
   }
 })
@@ -42,68 +42,42 @@ const popUps = ref({})
 onMounted(async () => {
   map.credentials = await Auth.currentUserCredentials();
   await initMap();
-
-  if (props.action && props.action === "show_delivery_info") {
-
-  }
-
-  if (props.action && props.action === "display_routes") {            
-     posInterval.value = setInterval(async() => {
-          await this.getDeviceIds();
-          let trackerInfo = await this.getPositions();
-          if (trackerInfo) {
-            let today = new Date();
-            let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-            let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-            let dateTime = date+' '+time;
-            console.log(dateTime + " refreshing " + trackerInfo.length + " devices ")
-
-            for (let i = 0; i < trackerInfo.length; i++) {
-              if (!this.popUps[trackerInfo[i].DeviceId]) {
-                this.popUps[trackerInfo[i].DeviceId] = new maplibregl.Popup()
-              }
-              this.pointOnCircle(trackerInfo[i].Position[0],trackerInfo[i].Position[1],trackerInfo[i].DeviceId,trackerInfo[i].SampleTime)
-            }            
-          } else {
-            console.log("nothing to show!")
-          }
-      }, 15000)       
-  }
-
 });
 
 onBeforeUnmount(() => {
   if (posInterval) clearInterval(posInterval)
-})
+});
 
-watch(depCoord, (newPosition) => {  
-  const LngLat = [newPosition.lng, newPosition.lat]
-  console.log(LngLat)
-  console.log(newPosition)
-  const marker = new maplibregl.Marker().setLngLat(newPosition).addTo(map.map);
+function flyToMap(position, color = null) {
+  let marker = null
+  console.log(position)
+  if (color) {
+    marker = new maplibregl.Marker({ color: color }).setLngLat(position).addTo(map.map);
+  } else {
+    marker = new maplibregl.Marker().setLngLat(position).addTo(map.map);
+  }
   map.map.flyTo({
     center: marker.getLngLat(),
     essential: true,
     zoom: 14,
   });
+};
+
+watch(depCoord, (newPosition) => {
+  flyToMap(newPosition)
 });
 
-watch(destCoord, (newPosition) => {  
-  const marker = new maplibregl.Marker({color: "#a34a07"}).setLngLat(newPosition).addTo(map.map);
-  map.map.flyTo({
-    center: marker.getLngLat(),
-    essential: true,
-    zoom: 14,
-  });
+watch(destCoord, (newPosition) => {
+  flyToMap(newPosition, "#a34a07")
 });
 
-watch(geoFencePolygon,(newGeoFencePolygon)  => {  
+watch(geoFencePolygon, (newGeoFencePolygon) => {
   showGeoFence(newGeoFencePolygon)
 });
 
-watch(routeSteps, (newSteps) => {  
-    mapFit()
-    showRoute(newSteps)
+watch(routeSteps, (newSteps) => {
+  mapFit()
+  showRoute(newSteps)
 });
 
 function transformRequest(url, resourceType) {
@@ -130,6 +104,29 @@ function transformRequest(url, resourceType) {
   return { url: url || "" };
 }
 
+async function readAndShowTracker() {
+  posInterval.value = setInterval(async () => {
+    await getDeviceIds();
+    let trackerInfo = await getPositions();
+    if (trackerInfo) {
+      let today = new Date();
+      let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+      let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+      let dateTime = date + ' ' + time;
+      console.log(dateTime + " refreshing " + trackerInfo.length + " devices ")
+
+      for (let i = 0; i < trackerInfo.length; i++) {
+        if (!popUps[trackerInfo[i].DeviceId]) {
+          popUps[trackerInfo[i].DeviceId] = new maplibregl.Popup()
+        }
+        pointOnCircle(trackerInfo[i].Position[0], trackerInfo[i].Position[1], trackerInfo[i].DeviceId, trackerInfo[i].SampleTime)
+      }
+    } else {
+      console.log("nothing to show!")
+    }
+  }, 15000)
+}
+
 function pointOnCircle(lng, lat, deviceId, sampleTime) {
   let name = deviceId
   let color = "#007cbf"
@@ -142,7 +139,7 @@ function pointOnCircle(lng, lat, deviceId, sampleTime) {
     data: {
       type: "Point",
       coordinates: [lng, lat]
-    }
+    } 
   });
 
   // Add red if timeDiff is X
@@ -158,23 +155,12 @@ function pointOnCircle(lng, lat, deviceId, sampleTime) {
     }
   });
 
-  map.map.on('click', name, function () {
-    popUps[name]
-      .setLngLat([lng, lat])
-      .setHTML(deviceId + " - " + sampleTime)
-      .addTo(vm.map)
-  });
-
-  // Change the cursor to a pointer when the mouse is over the states layer.
-  map.map.on('mouseenter', name, function () {
-    map.map.getCanvas().style.cursor = 'pointer';
-  });
-
-  // Change it back to a pointer when it leaves.
-  map.map.on('mouseleave', name, function () {
-    map.map.getCanvas().style.cursor = '';
-  });
-
+  map.map.on('click', deviceId, function () {
+      popUps[name]
+        .setLngLat([lng, lat])
+        .setHTML(deviceId + " - " + sampleTime)
+        .addTo(map.map)
+    });
 }
 
 function mapFit() {
@@ -346,6 +332,31 @@ async function initMap() {
       style: import.meta.env.VITE_GEOMAP,
       transformRequest: transformRequest,
     });
+
+    // Change the cursor to a pointer when the mouse is over the states layer.
+    map.map.on('mouseenter', function () {
+      map.map.getCanvas().style.cursor = 'pointer';
+    });
+
+    // Change it back to a pointer when it leaves.
+    map.map.on('mouseleave', function () {
+      map.map.getCanvas().style.cursor = '';
+    });
+
+    map.map.on('load', async function () {
+      if (props.action && props.action === "show_route") {
+        const markerDep = new maplibregl.Marker().setLngLat(props.routeParams.geoStart).addTo(map.map);
+        const markerDest = new maplibregl.Marker({ color: "#a34a07" }).setLngLat(props.routeParams.geoEnd).addTo(map.map);
+        mapFit()
+        showRoute(geoStore.routeSteps)
+      }
+
+      if (props.action && props.action === "display_routes") {
+        await readAndShowTracker()
+      }
+
+});
+
     //Zoom in and out button
     map.map.addControl(new maplibregl.NavigationControl(), "top-left");
     //A button that allows the map to fly to user’s current location when pressed
@@ -360,5 +371,6 @@ async function initMap() {
     resolve();
   });
 }
+
 
 </script>

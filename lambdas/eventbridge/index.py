@@ -11,7 +11,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 pinpoint = boto3.client('pinpoint')
-ssm = boto3.client('ssm')
 appsync = boto3.client('appsync')
 
 appsync_url = os.getenv('APPSYNC_URL')
@@ -29,23 +28,7 @@ auth = AWS4Auth(
         boto3_session.region_name,
         'appsync',
         session_token=credentials.token,
-    )
-                
-def GetSsmParam(paramKey, isEncrypted):
-    try:
-        ssmResult = ssm.get_parameter(
-            Name=paramKey,
-            WithDecryption=isEncrypted
-        )
-
-        if (ssmResult["ResponseMetadata"]["HTTPStatusCode"] == 200):
-            return ssmResult["Parameter"]["Value"]
-        else:
-            return ""
-
-    except Exception as e:
-        logger.error(str(e))
-        return ""
+    )                
 
 def getGeoFenceRecord(geoFenceId):
     graphqlQuery="""

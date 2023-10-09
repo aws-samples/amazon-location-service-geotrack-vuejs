@@ -22,12 +22,26 @@ export const useGeoStore = defineStore("geo", {
         destCoord: [],
         routeSummary: null,
         routeSteps: null,
-        geoFencePolygon: [],
+        geoFencePolygon: null,        
         devicesIdsInRoute: [],
         geoFenceList: []
     }),
 
     actions: {
+        uniqueId() {
+            const dateString = Date.now().toString(36);
+            const randomness = Math.random()
+              .toString(36)
+              .slice(2);
+            return dateString + randomness;
+          },
+
+        ddbExpirationTime(days) {
+            let date = new Date();
+            date.setDate(date.getDate() + days);
+            return date;
+          },
+
         async fetchDevicesIdsInRoute() {
             try {
                 let deviceIds = [];
@@ -53,9 +67,9 @@ export const useGeoStore = defineStore("geo", {
             }
         },       
 
-        saveGeoFence(name, polygonVertices) {
+        async saveGeoFence(name, polygonVertices) {
             const locationService = new Location({
-                credentials: useUserStore.credentials,
+                credentials: await Auth.currentUserCredentials(),
                 region: import.meta.env.VITE_AWS_REGION,
             });
             return new Promise((resolve, reject) => {
@@ -75,12 +89,12 @@ export const useGeoStore = defineStore("geo", {
                     locationService.putGeofence(geoParams, function (err, data) {
                         if (err) {
                             console.log(err, err.stack);
-                            reject("Rejected");
+                            reject(null);
                         }
                         else {
                             console.log("Saved on Amazon Location Service: " + data.GeofenceId);
                             geoFenceId = data.GeofenceId
-                            resolve("Resolved");
+                            resolve(geoFenceId);
                         }
                     })
 
@@ -98,14 +112,14 @@ export const useGeoStore = defineStore("geo", {
             });
         },
 
-        fetchGeoFenceItems() {
+        async fetchGeoFenceItems() {
             try {
                 let geoFences = [];
                 console.group("fetchGeoFenceItems");
                 this.loading = true;
                 this.geoFenceList = [];
                 const locationService = new Location({
-                    credentials: useUserStore.credentials,
+                    credentials: await Auth.currentUserCredentials(),
                     region: import.meta.env.VITE_AWS_REGION,
                 });
 
@@ -144,14 +158,13 @@ export const useGeoStore = defineStore("geo", {
                 console.group("listTrips");
                 this.loading = true;
                 this.driversList = [];
-
                 const tripResults = await API.graphql({
                     query: queries.listTrips,
                     authToken: this.userStore.token
                 });
+                console.log(tripResults);
                 tripsList = [...tripResults.data.allTrips.trips]
                 this.loading = false;
-                console.log()
                 return tripsList;
             } catch (error) {
                 console.error(error);
@@ -227,43 +240,58 @@ export const useGeoStore = defineStore("geo", {
             }
         },
 
-        async saveDevice(id, driverId, deviceType, isNewDevice) {
+        async createTrip(tripRecord) {
             try {
-                console.group("saveDevice");
+                console.group("createTrip");                
                 this.loading = true;
                 let result = "";
-                var deviceInput = {
-                    id: id,
-                    deliverydriverId: driverId,
-                    deviceType: deviceType
+
+                console.log(tripRecord);
+
+                const geoFenceId = await this.saveGeoFence(
+                    this.uniqueId(),
+                    this.geoFencePolygon[0]
+                    );
+
+                if (geoFenceId == null) {
+                    console.error("Error saving geoFence")
+                    return;
                 }
-                if (!isNewDevice) {
-                    const {
-                        // @ts-ignore
-                        data: { updateDevice: devId }
-                    } = await API.graphql(graphqlOperation(updateDevice, {
-                        input: deviceInput
-                    }));
-                    result = devId
-                } else {
-                    const {
-                        // @ts-ignore
-                        data: { createDevice: devId }
-                    } = await API.graphql(graphqlOperation(createDevice, {
-                        input: deviceInput
-                    }));
-                    result = devId
+
+                var tripInput = {
+                    labelStart: tripRecord.trip.labelStart,
+                    geoStart: this.depCoord,
+                    labelEnd: tripRecord.trip.labelEnd,
+                    geoEnd: this.destCoord,
+                    distance: Math.round(this.routeSummary.Distance).toString(),
+                    duration: Math.round(
+                        this.routeSummary.DurationSeconds / 60
+                    ).toString(),
+                    geoFenceId: geoFenceId,
+                    //expireAt: Math.round(this.ddbExpirationTime(7).getTime()), // Expire the date 7 days from today - DynamoDb Expire
+                    status: "accepted",
+                    driver: {
+                        id: tripRecord.trip.driver.id
+                    },
+                    clientPhone: tripRecord.trip.clientPhone,
                 }
+
+                console.log(tripInput);
+
+                result = await API.graphql({
+                    query: mutations.createTrip,
+                    variables: { input: tripInput },
+                    authToken: this.userStore.token
+                });
+
                 this.loading = false;
                 console.groupEnd();
                 return result;
             } catch (error) {
                 console.error(error);
-                this.loading = false;
-                console.groupEnd();
-                throw error;
             }
         },
+        
 
         async deldriver(id) {
             try {

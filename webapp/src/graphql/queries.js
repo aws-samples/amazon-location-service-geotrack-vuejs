@@ -34,7 +34,18 @@ query ListTrips {
   allTrips {
     trips {
       createdAt
+      duration
       distance
+      labelStart
+      geoStart {
+        lat
+        lng
+      }
+      labelEnd
+      geoEnd {
+        lat
+        lng
+      }
       driver {
         id
         fullName

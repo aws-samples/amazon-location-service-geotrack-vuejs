@@ -125,7 +125,8 @@ Resources:
                 - Effect: Allow
                   Action: 
                     - "geo:ListGeofences"
-                    - "geo:GetGeofence"                    
+                    - "geo:GetGeofence"        
+                    - "geo:PutGeofence"           
                   Resource: !GetAtt GeoFenceCollection.Arn
                 - Effect: Allow
                   Action: 
@@ -179,7 +180,7 @@ Resources:
         - AttributeName: createdAt
           KeyType: RANGE
       TimeToLiveSpecification:
-        AttributeName: expiration
+        AttributeName: expireAt
         Enabled: true
       GlobalSecondaryIndexes: 
         - 
@@ -405,7 +406,7 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - SSMParameterReadPolicy:
-            ParameterName: !Sub "amplify/${ProjectName}*"
+            ParameterName: !Sub "${ProjectName}/*"
         - LambdaInvokePolicy:
             FunctionName: !Ref PushVehiclePosition
         - Version: '2012-10-17' # Policy Document
@@ -433,7 +434,7 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - SSMParameterReadPolicy:
-            ParameterName: !Sub "amplify/${ProjectName}*"
+            ParameterName: !Sub "${ProjectName}/*"
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -454,11 +455,91 @@ Resources:
           IOT_TOPIC: !Sub "${ProjectName}/positions"
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
+          ROUTER_NAME: !Ref RouteCalculation
+
+  # IoTUpdateTracker:
+  #   Type: AWS::Serverless::Function 
+  #   Properties:
+  #     FunctionName: !Sub "${ProjectName}-${EnvironmentName}-IoTUpdateTracker"
+  #     CodeUri: ./lambdas/iot
+  #     Events:
+  #       EventBusRule:
+  #         Type: IoTRule
+  #         Properties:
+  #           Sql: !Sub "SELECT * FROM '${ProjectName}/positions'"
+  #     Policies:
+  #       - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+  #       - SSMParameterReadPolicy:
+  #           ParameterName: !Sub "${ProjectName}/*"
+  #       - Version: '2012-10-17' # Policy Document
+  #         Statement:
+  #           - Effect: Allow
+  #             Action:                
+  #               - "geo:ListTrackers"
+  #               - "geo:ListTrackerConsumers"
+  #               - "geo:BatchUpdateDevicePosition"                
+  #               - "geo:BatchGetDevicePosition"                
+  #               - "geo:GetDevicePositionHistory"
+  #               - "geo:DescribeTracker"                
+  #               - "geo:UpdateTracker"
+  #             Resource: "*"
+  #     Environment:
+  #       Variables:
+  #         PROJECT_NAME: !Ref ProjectName
+  #         PROJECT_ENV: !Ref EnvironmentName
+  #         TRAKER: !Ref Tracker
+
+  IoTTopicRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - iot.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: location
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:                
+                  - "geo:ListTrackers"
+                  - "geo:ListTrackerConsumers"
+                  - "geo:BatchUpdateDevicePosition"                
+                  - "geo:BatchGetDevicePosition"                
+                  - "geo:GetDevicePositionHistory"
+                  - "geo:DescribeTracker"                
+                  - "geo:UpdateTracker"
+                Resource: "*"
+
+  IoTTopicRule:
+      Type: AWS::IoT::TopicRule 
+      Properties: 
+        RuleName: !Sub "${ProjectName}-${EnvironmentName}-IoTRuleLocation"
+        TopicRulePayload:
+            RuleDisabled: false
+            Sql: !Sub "SELECT * FROM '${ProjectName}/positions'" 
+            Actions:
+              - Location: 
+                  DeviceId: "${DeviceID}"
+                  Latitude: "${get(position, 0)}"
+                  Longitude: "${get(position, 1)}"
+                  RoleArn: !GetAtt IoTTopicRuleRole.Arn
+                  Timestamp: 
+                    Value: "${timestamp()}"
+                    Unit: "MILLISECONDS"
+                  TrackerName: !Ref Tracker
+
 
   PinpointProject:
     Type: AWS::Pinpoint::App
     Properties: 
       Name: !Sub "${ProjectName}-${EnvironmentName}-PinPoint"
+
   PinpointSMSChannel:
     Type: AWS::Pinpoint::SMSChannel
     Properties: 
@@ -482,7 +563,7 @@ Resources:
         - PinpointEndpointAccessPolicy:
             PinpointApplicationId: !Ref PinpointProject
         - SSMParameterReadPolicy:
-            ParameterName: !Sub "amplify/${ProjectName}*"
+            ParameterName: !Sub "${ProjectName}/*"
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -569,36 +650,6 @@ Resources:
       Principal: "events.amazonaws.com"
       SourceArn: !GetAtt GeoRule.Arn
       
-  IoTUpdateTracker:
-    Type: AWS::Serverless::Function 
-    Properties:
-      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-IoTUpdateTracker"
-      CodeUri: ./lambdas/iot
-      Events:
-        EventBusRule:
-          Type: IoTRule
-          Properties:
-            Sql: !Sub "SELECT * FROM '${ProjectName}/positions'"
-      Policies:
-        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-        - SSMParameterReadPolicy:
-            ParameterName: !Sub "amplify/${ProjectName}*"
-        - Version: '2012-10-17' # Policy Document
-          Statement:
-            - Effect: Allow
-              Action:                
-                - "geo:ListTrackers"
-                - "geo:ListTrackerConsumers"
-                - "geo:BatchUpdateDevicePosition"                
-                - "geo:BatchGetDevicePosition"                
-                - "geo:GetDevicePositionHistory"
-                - "geo:DescribeTracker"                
-                - "geo:UpdateTracker"
-              Resource: "*"
-      Environment:
-        Variables:
-          PROJECT_NAME: !Ref ProjectName
-          PROJECT_ENV: !Ref EnvironmentName
 
 Outputs:
   S3WebAppBucket:

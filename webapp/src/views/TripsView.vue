@@ -6,14 +6,11 @@ import { Auth } from "aws-amplify";
 import Map from "../components/Map.vue";
 import circle from '@turf/circle'
 import Header from "../components/Header.vue";
-import { useUserStore } from "../stores/user";
 import { useGeoStore } from "../stores/geo";
 import { VDataTable } from "vuetify/labs/VDataTable";
 
-const userStore = useUserStore();
 const geoStore = useGeoStore();
 const showRoute = ref(false);
-const showSearch = ref(false);
 const isLoadingDep = ref(false);
 const isLoadingDest = ref(false);
 const tripsData = ref([])
@@ -21,11 +18,7 @@ const driversData = ref([])
 const selected = [];
 const buttonAddRow = ref(false);
 const buttonRemoveRow = ref(false);
-const buttonMap = ref(false);
-const params = null;
-const summaryData = "";
-const departure = null;
-const destination = null;
+const routeParams = ref([]);
 const destSearch = ref();
 const depSearch = ref();
 const items = reactive({
@@ -83,11 +76,10 @@ const dataHeaders = [
     title: "created At",
     key: "createdAt",
   },
-  // {
-  //   title:  "View in Map",
-  //   key:  "",
-  //   align: "center",
-  // },
+  {
+    title:  "View in Map",
+    value: "delete",
+  },
 ]
 
 onBeforeMount(async () => {
@@ -103,62 +95,24 @@ async function loadTable() {
   }
 }
 
-function ddbExpirationTime(days) {
-  let date = new Date();
-  date.setDate(date.getDate() + days);
-  return date;
-};
-
-const trips = reactive({
+const trip = reactive({
   driver: null,
   labelStart: null,
   geoStart: null,
   labelEnd: null,
   geoEnd: null,
-  duration: 0,
-  distance: 0,
-  geoFenceId: null,
   clientPhone: null,
-  status: null,
-  driver: null
 })
-
-function uniqueId() {
-      const dateString = Date.now().toString(36);
-      const randomness = Math.random()
-        .toString(36)
-        .slice(2);
-      return dateString + randomness;
-    }
 
 async function onSubmit() {
   try {
 
-    const geoFenceId = await geoStore.saveGeoFence({
-      name: uniqueId(),
-      polygonVertices: geoStore.geoFencePolygon[0],
-    });
-
-    await this.calculateRoute();
-
-    let tripRec = await geoStore.createTrip({
-      geoStart: geoStore.depCoord,
-      geoEnd: geoStore.destCoord,
-      distance: Math.round(geoStore.routeSummary.Distance).toString(),
-      duration: Math.round(
-        geoStore.routeSummary.DurationSeconds / 60
-      ).toString(),
-      geoFenceId: geoFenceId,
-      expireAt: Math.round(ddbExpirationTime(7).getTime()), // Expire the date 7 days from today - DynamoDb Expire
-      status: "accepted",
-      driver: null
-    });
+    let tripRec = await geoStore.createTrip({ trip });
 
     console.log("Trip saved " + tripRec);
 
     buttonAddRow.value = false;
-    onReset();
-    loadTable();
+    await loadTable();
   } catch (error) {
     console.error(error);
   }
@@ -166,19 +120,16 @@ async function onSubmit() {
 }
 
 function onReset() {
-  this.departure = null
-  this.destination = null
+  items.departure = null
+  items.destination = null
 }
 
-async function toggleShowMap(props) {
-  this.params = props.row;
-  this.userPhone = props.row.userPhone;
-  this.agent = props.row.deliveryAgentFullName;
-  this.depLocation = props.row.geoStart;
-  this.destLocation = props.row.geoEnd;
-  this.departure = await this.searchCoords(props.row.geoStart, null);
-  this.destination = await this.searchCoords(props.row.geoEnd, null);
-  this.buttonAddRow = true;
+async function toggleShowMap(item) {
+  geoStore.depCoord = item.geoStart;
+  geoStore.destCoord = item.geoEnd;
+  await calculateRoute()
+  routeParams.value = item
+  showRoute.value = true
 }
 
 watch(depSearch, async (newValue) => {
@@ -255,47 +206,48 @@ async function searchCoords(val, category) {
 }
 
 async function calculateRoute() {
-    const locationService = new Location({
-        credentials: await Auth.currentUserCredentials(),
-        region: import.meta.env.VITE_AWS_REGION,
-    });
-    calculateGeoFence([geoStore.destCoord.lng, geoStore.destCoord.lat]);
-    return new Promise((resolve, reject) => {
-        console.group("calculateRoute");
-        var params = {
-            CalculatorName: import.meta.env.VITE_GEOROUTE_CALCULATION,
-            DeparturePosition: [
-              geoStore.depCoord.lng,
-              geoStore.depCoord.lat,
-            ],
-            DestinationPosition: [
-              geoStore.destCoord.lng,
-              geoStore.destCoord.lat,
-            ],
-            DepartNow: false,
-            IncludeLegGeometry: true,
-            TravelMode: 'Car'
-        };
-        
-        locationService.calculateRoute(params, function (err, data) {
-            if (err) {
-                console.error(err, err.stack);
-                console.groupEnd();
-                reject("Rejected");
-            }
-            else {                        
-                geoStore.routeSteps = [...data.Legs[0].Geometry.LineString];
-                geoStore.routeSummary = data.Summary;
-                console.groupEnd();
-                resolve("Resolved");
-            }
-        })
-    });
+  const locationService = new Location({
+    credentials: await Auth.currentUserCredentials(),
+    region: import.meta.env.VITE_AWS_REGION,
+  });
+  // Create geofence
+  calculateGeoFence([geoStore.destCoord.lng, geoStore.destCoord.lat]);
+  return new Promise((resolve, reject) => {
+    console.group("calculateRoute");
+    var params = {
+      CalculatorName: import.meta.env.VITE_GEOROUTE_CALCULATION,
+      DeparturePosition: [
+        geoStore.depCoord.lng,
+        geoStore.depCoord.lat,
+      ],
+      DestinationPosition: [
+        geoStore.destCoord.lng,
+        geoStore.destCoord.lat,
+      ],
+      DepartNow: false,
+      IncludeLegGeometry: true,
+      TravelMode: 'Car'
+    };
+
+    locationService.calculateRoute(params, function (err, data) {
+      if (err) {
+        console.error(err, err.stack);
+        console.groupEnd();
+        reject("Rejected");
+      }
+      else {
+        geoStore.routeSteps = [...data.Legs[0].Geometry.LineString];
+        geoStore.routeSummary = data.Summary;
+        console.groupEnd();
+        resolve("Resolved");
+      }
+    })
+  });
 }
 
 function calculateGeoFence(center) {
   var options = {
-    steps: 5,
+    steps: 10,
     units: "kilometers",
     options: {},
   };
@@ -309,7 +261,7 @@ function setDestCoord(val) {
     let lng = val.value[0];
     let lat = val.value[1];
     geoStore.destCoord = { 'lng': lng, 'lat': lat }
-    trips.labelEnd = val.title
+    trip.labelEnd = val.title
   }
 }
 
@@ -318,7 +270,7 @@ function setDepCoord(val) {
     let lng = val.value[0];
     let lat = val.value[1];
     geoStore.depCoord = { 'lng': lng, 'lat': lat }
-    trips.labelStart = val.title
+    trip.labelStart = val.title
   }
 }
 
@@ -330,100 +282,96 @@ function resetVariables() {
   this.deviceId = "";
   this.params = "";
 }
-
-
 </script>
-
 
 <template>
   <div>
     <Header />
-    <v-btn-toggle>
-      <v-btn size="small" variant="outlined" prepend-icon="mdi-plus-circle-outline" @click="buttonAddRow = true">
-        Add Trip
-      </v-btn>
-      <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="buttonRemoveRow">
-        Del Trip
-      </v-btn>
-    </v-btn-toggle>
 
-    <v-data-table :headers="dataHeaders" :items="tripsData" item-value="name" class="elevation-1" show-select
-      density="compact"></v-data-table>
+    <v-container>
+      <v-btn-toggle>
+        <v-btn size="small" variant="outlined" prepend-icon="mdi-plus-circle-outline" @click="buttonAddRow = true">
+          Add Trip
+        </v-btn>
+        <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="buttonRemoveRow">
+          Del Trip
+        </v-btn>
+      </v-btn-toggle>
 
+      <v-card>
+        <v-data-table :headers="dataHeaders" :items="tripsData" item-value="name" class="elevation-1" show-select
+          density="compact">
+        
+          <template v-slot:item.delete="{ item }">
+            <v-btn variant="plain" icon="mdi-map-legend" @click="toggleShowMap(item)"></v-btn>               
+          </template>
+        
+        </v-data-table>
+      </v-card>
+    </v-container>
 
-      <v-dialog v-model="buttonAddRow" width="600" height="800">
-        <v-card>
-          <v-form @submit.prevent="onSubmit">
-            <v-card-title>
-              <span class="text-h5">New Trip</span>
-            </v-card-title>
+    <v-dialog v-model="buttonAddRow" width="600" height="800">
+      <v-card>
+        <v-form @submit.prevent="onSubmit">
+          <v-card-title>
+            <span class="text-h5">New Trip</span>
+          </v-card-title>
 
-            <v-container>
-
-              <!-- <v-text-field
+         <v-text-field
               v-model="clientPhone"
               label="Client's mobile phone"
-              :maxlength="20"
-              unmasked-value
-              :mask="phoneMask"
-              :rules="[
-                (val) =>
-                  (val !== null && val !== '') || 'This field is required',
-              ]"
-            /> -->
+              :maxlength="20"              
+            />
 
-              <v-autocomplete v-model="trips.geoStart" :items="items.departure" v-model:search="depSearch"
-                @update:modelValue="setDepCoord" clearable hide-details no-filter return-object 
-                label="Search for departure"></v-autocomplete>
+          <v-autocomplete v-model="trip.geoStart" :items="items.departure" v-model:search="depSearch"
+            @update:modelValue="setDepCoord" clearable hide-details no-filter return-object
+            label="Search for departure"></v-autocomplete>
 
-              <v-autocomplete v-model="trips.geoEnd" :items="items.destination" v-model:search="destSearch"
-                @update:modelValue="setDestCoord" clearable hide-details no-filter return-object 
-                label="Search for destination"></v-autocomplete>
+          <v-autocomplete v-model="trip.geoEnd" :items="items.destination" v-model:search="destSearch"
+            @update:modelValue="setDestCoord" clearable hide-details no-filter return-object
+            label="Search for destination"></v-autocomplete>
 
-              <v-autocomplete v-model="trips.driver" :items="driversData" item-title="fullName" item-value="id" clearable
-                return-object label="Pick a driver"></v-autocomplete>
+          <v-autocomplete v-model="trip.driver" :items="driversData" item-title="fullName" item-value="id" clearable
+            return-object label="Pick a driver"></v-autocomplete>
 
-              <div>
-                <v-btn-group push>
-                  <v-btn @click="calculateRoute">Route</v-btn>
-                  <v-btn type="submit">Save</v-btn>
-                  <v-btn type="reset">Reset</v-btn>
-                </v-btn-group>
-              </div>
-              <Map action="show_delivery_info" :params="params" />
-            </v-container>
-          </v-form>          
-        </v-card>
-      </v-dialog>
+          <div>
+            <v-btn-group push>
+              <v-btn @click="calculateRoute">Route</v-btn>
+              <v-btn type="submit">Save</v-btn>
+              <v-btn type="reset">Reset</v-btn>
+            </v-btn-group>
+          </div>
+          <Map />
+        </v-form>
+      </v-card>
+    </v-dialog>
 
 
 
-    <v-dialog v-model="showRoute">
+    <v-dialog v-model="showRoute" width="600" height="800">
       <v-card>
-        <v-card-text class="bg-primary text-white">
-          <div class="text-h6">Route Summary</div>
-        </v-card-text>
+        <v-card-title>
+            <span class="text-h5">Route Summary</span>
+          </v-card-title>
 
         <v-list>
           <v-list-item>
-            <!-- <v-icon color="blue" name="add_road" /> -->
             <v-list-item-subtitle>Estimate Distance</v-list-item-subtitle>
             <div>{{ Math.round(geoStore.routeSummary.Distance) }} Km</div>
           </v-list-item>
 
           <v-list-item>
-            <!-- <v-item-section avatar>
-              <v-icon color="blue" name="schedule" />
-            </v-item-section> -->
+
 
             <v-list-item-subtitle>Estimate Duration</v-list-item-subtitle>
             <div>{{ Math.round(geoStore.routeSummary.DurationSeconds / 60) }} min</div>
           </v-list-item>
         </v-list>
 
-        <v-card-actions align="right">
-          <v-btn flat>OK</v-btn>
+        <Map action="show_route" :routeParams="routeParams"/>
 
+        <v-card-actions>
+            <v-btn>Close</v-btn>      
         </v-card-actions>
       </v-card>
     </v-dialog>

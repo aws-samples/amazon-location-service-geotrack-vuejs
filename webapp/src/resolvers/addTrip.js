@@ -10,6 +10,8 @@ export function request(ctx) {
     values.createdAt = timeStamp
 	values.updatedAt = timeStamp
 
+	values.expiresAt = values.expiresAt ?? util.time.nowEpochSeconds() + 3600 * 24 * 30
+
 	return {
 		operation: 'PutItem',
 		key: util.dynamodb.toMapValues(keys),

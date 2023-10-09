@@ -33,7 +33,7 @@ async function signOut() {
       <v-toolbar-items>
         <v-tooltip text="Home" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon>
+            <v-btn v-bind="props" icon @click="$router.push('/')">
               <v-icon>mdi-home-circle-outline</v-icon>
             </v-btn>
           </template>
@@ -41,7 +41,7 @@ async function signOut() {
 
         <v-tooltip text="Drivers" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon>
+            <v-btn v-bind="props" icon @click="$router.push('/drivers')">
             <v-icon>mdi-card-account-details-outline</v-icon>
             </v-btn>
           </template>
@@ -49,7 +49,7 @@ async function signOut() {
 
         <v-tooltip text="Trips" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon>
+            <v-btn v-bind="props" icon @click="$router.push('/trips')">
                 <v-icon>mdi-map-marker-path</v-icon>
             </v-btn>
           </template>

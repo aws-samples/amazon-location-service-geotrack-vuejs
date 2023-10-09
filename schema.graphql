@@ -30,8 +30,8 @@ type Trip {
 	duration: Float
 	distance: Float
 	geoFenceId: ID
-	clientPhone: String
-	expireDate: Int
+	clientphone: String
+	expireAt: Float
 	status: TripStatus
 	createdAt: AWSDateTime
 	updatedAt: AWSDateTime
@@ -54,11 +54,13 @@ input TripInput {
 	driver: DriverInput
 	geoStart: CoordinateInput
 	geoEnd: CoordinateInput
+	labelStart: String
+	labelEnd: String
 	duration: Float
 	distance: Float
 	geoFenceId: ID
-	userPhone: String
-	expireDate: Int
+	clientPhone: String
+	expireAt: Float
 	status: TripStatus
 	createdAt: AWSTimestamp
 	updatedAt: AWSTimestamp
