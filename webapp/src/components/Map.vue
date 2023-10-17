@@ -6,7 +6,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { onMounted, onBeforeUnmount } from "vue";
+import { onMounted, onUnmounted } from "vue";
 import { storeToRefs } from 'pinia'
 import maplibregl from "maplibre-gl";
 import { Signer } from "@aws-amplify/core";
@@ -44,8 +44,10 @@ onMounted(async () => {
   await initMap();
 });
 
-onBeforeUnmount(() => {
-  if (posInterval) clearInterval(posInterval)
+onUnmounted(() => {
+  if (posInterval && posInterval.value > 0) { 
+    clearInterval(posInterval.value) 
+  }
 });
 
 function flyToMap(position, color = null) {
@@ -105,9 +107,18 @@ function transformRequest(url, resourceType) {
 }
 
 async function readAndShowTracker() {
+  
   posInterval.value = setInterval(async () => {
-    await getDeviceIds();
-    let trackerInfo = await getPositions();
+    // Getting deviceIds from trips that contains status == inroute
+    let devicesIds = []
+    try {
+      devicesIds = await geoStore.fetchDevicesIdsInRoute();
+    } catch (error) {
+      console.error(error);
+    }
+
+    // get the position from Amazon Location Service Tracker 
+    let trackerInfo = await getPositions(devicesIds);
     if (trackerInfo) {
       let today = new Date();
       let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
@@ -233,13 +244,7 @@ function showGeoFence(geoFencePolygon) {
   });
 }
 
-async function getDeviceIds() {
-  try {
-    await this.geoStore.fetchDevicesIdsInRoute();
-  } catch (error) {
-    console.error(error);
-  }
-}
+
 
 /**
  * Returns an array with arrays of the given size.
@@ -291,13 +296,13 @@ async function batchGetDevicePosition(params) {
   })
 }
 
-async function getPositions() {
+async function getPositions(devicesIdsInRoute) {
 
-  if (this.geoStore.devicesIdsInRoute == 0) return [];
+  if (devicesIdsInRoute == 0) return [];
 
   let devicePositionAll = []
   // Breaking into arrays of 10 items as per batchGetDevicePosition limit
-  let deviceIdsChunks = this.chunkArray(this.geoStore.devicesIdsInRoute, 10)
+  let deviceIdsChunks = chunkArray(devicesIdsInRoute, 10)
 
   for (let i = 0; i < deviceIdsChunks.length; i++) {
     var params = {
@@ -305,10 +310,10 @@ async function getPositions() {
       TrackerName: import.meta.env.VITE_GEOTRACKER,
     };
 
-    let bathPos = await this.batchGetDevicePosition(params)
+    let bathPos = await batchGetDevicePosition(params)
 
     for (let p = 0; p < bathPos.length; p++) {
-      let timeDiff = this.getTimeDiffFromNow(bathPos[p].SampleTime)
+      let timeDiff = getTimeDiffFromNow(bathPos[p].SampleTime)
       if (timeDiff.hh <= 24) {
         devicePositionAll.push(bathPos[p])
       }

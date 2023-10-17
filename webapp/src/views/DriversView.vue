@@ -125,8 +125,6 @@ async function removeRow() {
 <template>
   <div>
     <Header />
-    
-
     <v-container>
       <v-btn-toggle>
       <v-btn size="small" variant="outlined" prepend-icon="mdi-plus-circle-outline" @click="buttonAddRow = true">
@@ -149,8 +147,6 @@ async function removeRow() {
             <v-card-title>
               <span class="text-h5">New/agent Device</span>
             </v-card-title>
-
-            <v-card-text>
               <v-container>
                 <v-text-field label="Full Name" :rules="[
                   () => !!driver.fullName || 'This field is required',
@@ -192,18 +188,17 @@ async function removeRow() {
                   // () => !(this.data.includes(deviceId)) || 'DeviceId is not unique',
                 ]" @keyup.enter="prompt = false" />
               </v-container>
-            </v-card-text>
 
             <v-card-actions align="right" class="text-primary">
               <v-btn class="text-none" color="#4f545c" prepend-icon="mdi-check" variant="flat" type="submit">
                 Submit
               </v-btn>
 
-              <v-btn border class="text-none" color="#2f3136" prepend-icon="mdi-cancel" variant="text"
+              <v-btn border class="text-none" color="#2f3136" prepend-icon="mdi-cancel" variant="outlined"
                 @click="buttonAddRow = false">
                 Cancel
               </v-btn>
-              <v-btn type="reset" border class="text-none" color="#2f3136" prepend-icon="mdi-autorenew" variant="text">
+              <v-btn type="reset" border class="text-none" color="#2f3136" prepend-icon="mdi-autorenew" variant="outlined">
                 Reset
               </v-btn>
             </v-card-actions>

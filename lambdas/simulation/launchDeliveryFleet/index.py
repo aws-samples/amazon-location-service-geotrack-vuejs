@@ -31,38 +31,32 @@ auth = AWS4Auth(
         session_token=credentials.token,
     )
 
-graphqlQuery="""
-    query listDeliveryInfos(
-    $filter: ModelDeliveryInfoFilterInput
-    $limit: Int
-    $nextToken: String
+graphqlQuery=""""
+query DeviceIdByTripStatus (
+  $status: TripStatus
   ) {
-    listDeliveryInfos(filter: $filter, limit: $limit, nextToken: $nextToken) {
-      items {
-        id
-        geoStart {
-          lat
-          lng
-        }
-        geoEnd {
-          lat
-          lng
-        }
-        duration
-        distance
-        status
-        deliveryAgent {
-          id
-          fullName
-          device {
-            id
-            deliveryAgentId
-          }
-        }
+  statusTrips(status: $status) {
+    nextToken
+    trips {
+      id
+      geoStart {
+        lat
+        lng
       }
-      nextToken
+      geoEnd {
+        lat
+        lng
+      }
+      duration
+      distance
+      status
+      driver {
+        fullName
+        deviceId
+      }
     }
   }
+}
     """
 
 def setProxyResponse(data):
@@ -94,9 +88,11 @@ def handler(event, context):
         method='POST',
         json={'query': graphqlQuery}
     )    
+    
+    print(response.json())
 
     if 'data' in response.json():
-      items = response.json()['data']['listDeliveryInfos']['items']
+      items = response.json()['data']['statusTrips']
       for row in items:
         
         response = lambda_client.invoke(

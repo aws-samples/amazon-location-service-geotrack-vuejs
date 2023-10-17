@@ -14,11 +14,11 @@ At the toolbar there is a fire icon button. Upon clicking this button, the appli
 
 ## Stack
 
-* **Front-end** - Vue.js as the core framework, [Quasar](https://quasar.dev/) for UI, [MapLibre](https://github.com/maplibre) for map visualiztion, [AWS Amplify](https://aws.amazon.com/amplify/) for Auth UI component and AWS integration. 
+* **Front-end** - Vue.js as the core framework, [Vuetify](https://vuetifyjs.com/en/) for UI, [MapLibre](https://github.com/maplibre) for map visualiztion, [AWS Amplify](https://aws.amazon.com/amplify/) libraries for Auth UI component and AWS integration.
 * **Data** - User data is saved in [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) via GraphQL using [AWS AppSync](https://aws.amazon.com/appsync/). Devices GPS positions are stored in Amazon Location Service Tracker. 
 * **Auth** - [Amazon Cognito](https://aws.amazon.com/cognito/) provides JSON Web Tokens (JWT) and along with AppSync fine-grained authorization on what data types users can access.
-* **IoT** - [AWS IoT](https://aws.amazon.com/iot/) with topics and rules integrated with an [AWS Lambda](https://aws.amazon.com/lambda/). 
-
+* **IoT** - [AWS IoT](https://aws.amazon.com/iot/) with topics and rules. 
+* **Serverless** - [AWS Lambda](https://aws.amazon.com/lambda/) for backend processes. 
 
 ## User Interface
 

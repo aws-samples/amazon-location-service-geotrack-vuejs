@@ -1,9 +1,9 @@
-import { util } from '@aws-appsync/utils';
+import { util, runtime } from '@aws-appsync/utils'
 
 export function request(ctx) {
 
     if (ctx.prev.result.trips.length == 0) {
-        return { "trips": [] };
+        runtime.earlyReturn({ trips: []})
     }
 
     let drivers = []
@@ -20,6 +20,7 @@ export function response(ctx) {
     if (ctx.error) {
         util.error(ctx.error.message, ctx.error.type);
     }
+
     let trips = ctx.prev.result.trips
     let drivers = ctx.result.data["geotrack-dev-Drivers"]
     for (const idxTrips in trips) {

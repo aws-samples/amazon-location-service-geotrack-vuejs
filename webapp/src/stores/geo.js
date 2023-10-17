@@ -45,21 +45,19 @@ export const useGeoStore = defineStore("geo", {
         async fetchDevicesIdsInRoute() {
             try {
                 let deviceIds = [];
-                console.group("fetchdevicesidsinroute");
+                console.group("fetchDevicesIdsInRoute");
 
                 const results = await API.graphql({
                     query: queries.deviceIdByTripStatus,
-                    variables: {
-                        status: "inroute"
-                    },
+                    variables: { status: "inroute" },
                     authToken: this.userStore.token
-                });
-                let trips = results.data.statusTrips.trips
-                for (let i = 0; i < trips.length; i++) {
-                    deviceIds.push(trips[i].driver.deviceId)
-                }
-                this.devicesIdsInRoute = [...deviceIds];
+                });                
+                for (let i = 0; i < results.data.statusTrips.trips.length; i++) {                                                                
+                    deviceIds.push(results.data.statusTrips.trips[i].driver.deviceId)
+                }                
+                console.log("Drivers in rounte: " + deviceIds.length);                
                 console.groupEnd();
+                return deviceIds;
             } catch (error) {
                 console.error(error);
                 console.groupEnd();
@@ -162,9 +160,9 @@ export const useGeoStore = defineStore("geo", {
                     query: queries.listTrips,
                     authToken: this.userStore.token
                 });
-                console.log(tripResults);
                 tripsList = [...tripResults.data.allTrips.trips]
                 this.loading = false;
+                console.groupEnd();
                 return tripsList;
             } catch (error) {
                 console.error(error);
@@ -180,7 +178,6 @@ export const useGeoStore = defineStore("geo", {
                 console.group("listDrivers");
                 this.loading = true;
                 this.driversList = [];
-
                 const driverResults = await API.graphql({
                     query: queries.listDrivers,
                     authToken: this.userStore.token

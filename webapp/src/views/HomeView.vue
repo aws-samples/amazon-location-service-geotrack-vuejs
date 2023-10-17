@@ -10,7 +10,7 @@ import Header from "../components/Header.vue";
 
 <template>
   <v-app>
-    <Header />
+    <Header />    
     <Map action="display_routes" />
   </v-app>
 </template>

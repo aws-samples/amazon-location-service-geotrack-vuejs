@@ -147,6 +147,22 @@ Resources:
         authenticated: !GetAtt CognitoAuthorizedRole.Arn
         unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
 
+  ApiGw:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub ${ProjectName}-api
+      StageName: !Sub ${EnvironmentName}
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: "'*'"
+        AllowMethods: "'OPTIONS,POST,GET,PUT,DELETE'"
+      Auth:
+        DefaultAuthorizer: TokenAuthorizer
+        Authorizers:
+          TokenAuthorizer:
+            UserPoolArn: !GetAtt CognitoUserPool.Arn
+        AddDefaultAuthorizerToCorsPreflight: False 
+
   DriversTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -206,6 +222,8 @@ Resources:
           UserPoolId: !Ref CognitoUserPool
           AwsRegion: !Ref "AWS::Region"
           DefaultAction: ALLOW
+        Additional:
+          - Type: AWS_IAM
       DataSources:
         DynamoDb:
           DriversTable:
@@ -455,7 +473,8 @@ Resources:
           IOT_TOPIC: !Sub "${ProjectName}/positions"
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
-          ROUTER_NAME: !Ref RouteCalculation
+          ROUTE_NAME: !Ref RouteCalculation
+          TRACKER_NAME: !Ref Tracker
 
   # IoTUpdateTracker:
   #   Type: AWS::Serverless::Function 
@@ -493,14 +512,14 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - iot.amazonaws.com
-              Action:
-                - 'sts:AssumeRole'
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - iot.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
       Policies:
         - PolicyName: location
           PolicyDocument:
@@ -517,23 +536,23 @@ Resources:
                 Resource: "*"
 
   IoTTopicRule:
-      Type: AWS::IoT::TopicRule 
-      Properties: 
-        RuleName: !Sub "${ProjectName}-${EnvironmentName}-IoTRuleLocation"
-        TopicRulePayload:
-            RuleDisabled: false
-            Sql: !Sub "SELECT * FROM '${ProjectName}/positions'" 
-            Actions:
-              - Location: 
-                  DeviceId: "${DeviceID}"
-                  Latitude: "${get(position, 0)}"
-                  Longitude: "${get(position, 1)}"
-                  RoleArn: !GetAtt IoTTopicRuleRole.Arn
-                  Timestamp: 
-                    Value: "${timestamp()}"
-                    Unit: "MILLISECONDS"
-                  TrackerName: !Ref Tracker
-
+    Type: AWS::IoT::TopicRule 
+    Properties: 
+      RuleName: !Sub "${ProjectName}_${EnvironmentName}_IoTRuleLocation"
+      TopicRulePayload:
+        AwsIotSqlVersion: "2016-03-23"
+        RuleDisabled: false
+        Sql: !Sub "SELECT * FROM '${ProjectName}/positions'" 
+        Actions:
+          - Location: 
+              DeviceId: "${DeviceID}"
+              Latitude: "${get(position, 0)}"
+              Longitude: "${get(position, 1)}"
+              RoleArn: !GetAtt IoTTopicRuleRole.Arn
+              Timestamp: 
+                Value: "${timestamp()}"
+                Unit: "MILLISECONDS"
+              TrackerName: !Ref Tracker
 
   PinpointProject:
     Type: AWS::Pinpoint::App

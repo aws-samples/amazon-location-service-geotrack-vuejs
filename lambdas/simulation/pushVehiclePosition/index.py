@@ -18,15 +18,12 @@ iot_topic = os.getenv('IOT_TOPIC')
 project_name = os.getenv('PROJECT_NAME')
 project_env = os.getenv('PROJECT_ENV')
 ROUTE_NAME = os.getenv('ROUTE_NAME')
+TRACKER_NAME = os.getenv('TRACKER_NAME')
 
 location = boto3.client('location')
 iot = boto3.client('iot-data')
 
 def route_calculation(departure, destination):
-
-    ssmParam = "/amplify/" + project_name + "/route"
-    routeName = GetSsmParam(ssmParam, False)
-
     return location.calculate_route(
     CalculatorName=ROUTE_NAME,
     DeparturePosition=[departure['lng'], departure['lat']],
@@ -38,16 +35,17 @@ def route_calculation(departure, destination):
     
 def publish_location(trip_id, device_id, position):
     logger.info("Publishing device: " + str(device_id) + " at lng:" + str(position[0]) + " lat:" + str(position[1]))
-    retries = 0
     message = json.dumps(
-            {
-                "timestamp": datetime.now().isoformat(),
-                "trip_id": trip_id,
-                "device_id": device_id,
-                "latitude": float(position[1]),
-                "longitude": float(position[0])    
-            }
-        )    
+        {
+        	"TrackerName": TRACKER_NAME,
+        	"DeviceID" :device_id,
+        	"position": [
+        		float(position[1]),
+        		float(position[0])
+        	],
+        	"timestamp": datetime.now().isoformat(),
+        	"tripId": trip_id
+        })    
 
     try:
         iot.publish(
@@ -76,8 +74,7 @@ def get_random(min, max):
         return num
     
 def handler(event, context):
-    #print(event)
-    
+    #print(event)    
     route = route_calculation(event['geoStart'],event['geoEnd'])
     if 'Legs' in route:
         for step in route['Legs'][0]['Steps']:
@@ -90,10 +87,10 @@ def handler(event, context):
             
             logger.info("Sleeping: " + str(round(step['DurationSeconds']/div)) + " sec")
             sleep(round(step['DurationSeconds']/div))
-            publish_location(event['id'], event['deliveryAgent']['device']['id'], step['StartPosition'])
+            publish_location(event['id'], event['driver']['deviceId'], step['StartPosition'])
             logger.info("Sleeping: " + str(round(step['DurationSeconds']/div)) + " sec")
             sleep(round(step['DurationSeconds']/div))
-            publish_location(event['id'], event['deliveryAgent']['device']['id'], step['EndPosition'])
+            publish_location(event['id'], event['driver']['deviceId'], step['EndPosition'])
     
 
     response = {

@@ -1,7 +1,8 @@
 import { util } from '@aws-appsync/utils';
 
 export function request(ctx) {
-  const { status = 'intransit', limit = 20, nextToken } = ctx.arguments;
+  console.log("ctx.identity:", JSON.parse(JSON.stringify(ctx.identity)))
+  const { status = 'inroute', limit = 20, nextToken } = ctx.arguments;
   const index = 'statusSgi';
   const query = JSON.parse(
     util.transform.toDynamoDBConditionExpression({ status: { eq: status } })
@@ -10,6 +11,7 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
+  console.log("ctx.identity:", JSON.parse(JSON.stringify(ctx.identity)))
   const { items: trips = [], nextToken } = ctx.result;
   return { trips, nextToken };
 }

@@ -61,12 +61,12 @@ const dataHeaders = [
     key: "duration",
   },
   {
-    title: "geoStart",
-    key: "geoStart",
+    title: "Start",
+    key: "labelStart",
   },
   {
-    title: "geoEnd",
-    key: "geoEnd",
+    title: "End",
+    key: "labelEnd",
   },
   {
     title: "Status",
@@ -77,7 +77,7 @@ const dataHeaders = [
     key: "createdAt",
   },
   {
-    title:  "View in Map",
+    title: "View in Map",
     value: "delete",
   },
 ]
@@ -301,58 +301,77 @@ function resetVariables() {
       <v-card>
         <v-data-table :headers="dataHeaders" :items="tripsData" item-value="name" class="elevation-1" show-select
           density="compact">
-        
+
           <template v-slot:item.delete="{ item }">
-            <v-btn variant="plain" icon="mdi-map-legend" @click="toggleShowMap(item)"></v-btn>               
+            <v-btn variant="plain" icon="mdi-map-legend" @click="toggleShowMap(item)"></v-btn>
           </template>
-        
+
         </v-data-table>
       </v-card>
     </v-container>
 
-    <v-dialog v-model="buttonAddRow" width="600" height="800">
-      <v-card>
-        <v-form @submit.prevent="onSubmit">
-          <v-card-title>
-            <span class="text-h5">New Trip</span>
-          </v-card-title>
+    <v-row justify="center">
+      <v-dialog v-model="buttonAddRow" width="600" height="800">
+        <v-card>
+          <v-form @submit.prevent="onSubmit">
+            <v-card-title>
+              <span class="text-h5">New Trip</span>
+            </v-card-title>
+            <v-container>
 
-         <v-text-field
-              v-model="clientPhone"
-              label="Client's mobile phone"
-              :maxlength="20"              
-            />
+              <v-text-field v-model="trip.clientPhone" label="Client's mobile phone" :maxlength="20" />
 
-          <v-autocomplete v-model="trip.geoStart" :items="items.departure" v-model:search="depSearch"
-            @update:modelValue="setDepCoord" clearable hide-details no-filter return-object
-            label="Search for departure"></v-autocomplete>
+              <v-autocomplete v-model="trip.geoStart" :items="items.departure" v-model:search="depSearch"
+                @update:modelValue="setDepCoord" clearable hide-details no-filter return-object
+                label="Search for departure"></v-autocomplete>
 
-          <v-autocomplete v-model="trip.geoEnd" :items="items.destination" v-model:search="destSearch"
-            @update:modelValue="setDestCoord" clearable hide-details no-filter return-object
-            label="Search for destination"></v-autocomplete>
+              <br />
 
-          <v-autocomplete v-model="trip.driver" :items="driversData" item-title="fullName" item-value="id" clearable
-            return-object label="Pick a driver"></v-autocomplete>
+              <v-autocomplete v-model="trip.geoEnd" :items="items.destination" v-model:search="destSearch"
+                @update:modelValue="setDestCoord" clearable hide-details no-filter return-object
+                label="Search for destination"></v-autocomplete>
 
-          <div>
-            <v-btn-group push>
-              <v-btn @click="calculateRoute">Route</v-btn>
-              <v-btn type="submit">Save</v-btn>
-              <v-btn type="reset">Reset</v-btn>
-            </v-btn-group>
-          </div>
-          <Map />
-        </v-form>
-      </v-card>
-    </v-dialog>
+              <br />
+
+              <v-autocomplete v-model="trip.driver" :items="driversData" item-title="fullName" item-value="id" clearable
+                return-object label="Pick a driver"></v-autocomplete>
+
+              <br />
+
+              <div>
+                <v-card-actions align="right" class="text-primary">
+                  <v-btn class="text-none" color="#4f545c" prepend-icon="mdi-map-marker-multiple-outline" variant="flat" @click="calculateRoute">
+                    Route
+                  </v-btn>
+
+                  <v-btn class="text-none" color="#4f545c" prepend-icon="mdi-check" variant="flat" type="submit">
+                    Save
+                  </v-btn>
+
+                  <v-btn border class="text-none" color="#2f3136" prepend-icon="mdi-cancel" variant="outlined"
+                    @click="buttonAddRow = false">
+                    Cancel
+                  </v-btn>
+                  <v-btn type="reset" border class="text-none" color="#2f3136" prepend-icon="mdi-autorenew"
+                    variant="outlined">
+                    Reset
+                  </v-btn>
+                </v-card-actions>
+              </div>
+            </v-container>
+            <Map action="adding_route"  />
+          </v-form>
+        </v-card>
+      </v-dialog>
+    </v-row>
 
 
 
     <v-dialog v-model="showRoute" width="600" height="800">
       <v-card>
         <v-card-title>
-            <span class="text-h5">Route Summary</span>
-          </v-card-title>
+          <span class="text-h5">Route Summary</span>
+        </v-card-title>
 
         <v-list>
           <v-list-item>
@@ -368,10 +387,10 @@ function resetVariables() {
           </v-list-item>
         </v-list>
 
-        <Map action="show_route" :routeParams="routeParams"/>
+        <Map action="show_route" :routeParams="routeParams" />
 
         <v-card-actions>
-            <v-btn>Close</v-btn>      
+          <v-btn>Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

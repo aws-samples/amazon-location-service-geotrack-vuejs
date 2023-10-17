@@ -4,40 +4,21 @@ Before you deploy, you must have the following in place:
 *  [GitHub Account](https://github.com/) 
 *  [AWS CLI](https://aws.amazon.com/cli/) 
 *  [AWS SAM](https://aws.amazon.com/serverless/sam/) 
+*  Python 3.9, NodeJs v18 and npm
  
-# Step 1: Front-end deployment
 
-Before installing Amplify we need to create the IAM Role that associate the policies need to implement this solution. From the cloned directory, execute the follow CloudFormation template: 
+
+# Step 1: Deploy the Solution 
+
+In this step we deploy all resources this solution requires, including AWS AppSync Schema and its resolvers, via AWS SAM.  
+
+The first step is to execute **sam build** so the solution can prepare all the Python libraries to be installed.
 
 ```bash
-aws cloudformation deploy --template-file cfn-amplifyRole.yaml --stack-name geotrack-amplify-role --capabilities CAPABILITY_NAMED_IAM
+sam build
 ```
 
-It creates the role name **amplifyconsole-geotrack-backend-role** that will be used on the next step.
-
-The **Deploy to Amplify Console** button will take you to your AWS console to deploy the front-end solution.
-
-<a href="https://console.aws.amazon.com/amplify/home#/deploy?repo=https://github.com/aws-samples/amazon-location-service-geotrack-vuejs">
-    <img src="https://oneclick.amplifyapp.com/button.svg" alt="Deploy to Amplify Console">
-</a>
-
-
-The follow screenshots shows how simple this step is:
-
-1. ![alt text](../images/amplify-console-01.png)
-
-2. ![alt text](../images/amplify-console-02.png)
-
-3. ![alt text](../images/amplify-console-03.png)
-
-4. ![alt text](../images/amplify-console-04.png)
-
-# Step 2: Back-end deployment
-
-In this step we create the IoT Core and associate it to the AWS Lambda function, so it can send the GPS coordinates to Amazon Location Service Tracker. We also create the AWS Lambda functions to simulate a route in the application. To do so, execute the following command from the cloned repo. 
-
-The backend relies on resources that needed to be created during the front-end deployment, please make sure to proceed after Amplify has successfully deployed the application. 
-
+Next step is to deploy the solution
 
 ```bash
 sam deploy -g --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND CAPABILITY_NAMED_IAM
@@ -63,3 +44,9 @@ SAM configuration environment [default]:
 ```
 
 Confirm the deploy of the changeset and wait for the to finish.
+
+# Step 2: Deploy the WebApp
+
+```bash
+./webappconfig.sh
+```
