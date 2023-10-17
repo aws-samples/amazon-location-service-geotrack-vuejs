@@ -23,3 +23,4 @@ amplify/team-provider-info.json
 samconfig.toml
 queries.txt
 .env*
+.aws-sam
