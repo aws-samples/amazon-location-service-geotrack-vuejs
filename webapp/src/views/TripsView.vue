@@ -14,7 +14,7 @@ const isLoadingDep = ref(false);
 const isLoadingDest = ref(false);
 const tripsData = ref([])
 const driversData = ref([])
-const selected = [];
+const selected = ref([])
 const buttonAddRow = ref(false);
 const buttonRemoveRow = ref(false);
 const routeParams = ref([]);
@@ -228,6 +228,22 @@ function setDepCoord(val) {
   }
 }
 
+async function removeRow() {
+  try {
+    for (let i = 0; i < selected.value.length; i++) {
+      console.log(selected.value[i])
+      let tripRec = await geoStore.delTrip(selected.value[i])
+      console.log("Delete: " + tripRec.id)      
+    }
+    buttonRemoveRow.value = false
+
+    loadTable();
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 function resetVariables() {
   this.departure = [];
   this.destination = [];
@@ -247,7 +263,7 @@ function resetVariables() {
         <v-btn size="small" variant="outlined" prepend-icon="mdi-plus-circle-outline" @click="buttonAddRow = true">
           Add Trip
         </v-btn>
-        <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="buttonRemoveRow">
+        <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="buttonRemoveRow = true">
           Del Trip
         </v-btn>
       </v-btn-toggle>
@@ -339,8 +355,6 @@ function resetVariables() {
       </v-dialog>
     </v-row>
 
-
-
     <v-dialog v-model="showRoute" width="600" height="800">
       <v-card>
         <v-card-title>
@@ -369,18 +383,28 @@ function resetVariables() {
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="buttonRemoveRow" persistent>
-      <v-card>
-        <v-card-text class="row items-center">
-          <v-icon name="error_outline" size="xl" color="warning" />
-          <span class="v-ml-sm">Delete {{ selected.length }} deliveries?</span>
-        </v-card-text>
+    <v-row justify="center">
+      <v-dialog v-model="buttonRemoveRow" width="500">
+        <v-card>
+          <v-form @submit.prevent="onSubmit">
+            <v-card-title>
+              <span class="text-h6">Confirm deleting Trip?</span>
+            </v-card-title>
 
-        <v-card-actions align="right">
-          <v-btn flat>NO</v-btn>
-          <v-btn flat label="Yes" @click="removeRow" />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+            <v-card-actions align="right" class="text-primary">
+              <v-btn class="text-none" color="#4f545c" prepend-icon="mdi-check" variant="flat" @click="removeRow">
+                Yes
+              </v-btn>
+
+              <v-btn border class="text-none" color="#2f3136" prepend-icon="mdi-cancel" variant="outlined"
+                @click="buttonRemoveRow = false">
+                No
+              </v-btn>
+            </v-card-actions>
+          </v-form>
+        </v-card>
+      </v-dialog>
+    </v-row>
   </div>
+
 </template>

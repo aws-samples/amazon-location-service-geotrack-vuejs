@@ -258,7 +258,6 @@ export const useGeoStore = defineStore("geo", {
                     deliveryType: driverRecord.deliveryType,
                     deviceType: driverRecord.deviceType,
                     deviceId: driverRecord.deviceId,
-                    trips: []
                 }
 
                 if (driverRecord.id != null && driverRecord.id.length > 2) {
@@ -346,12 +345,36 @@ export const useGeoStore = defineStore("geo", {
 
         async delDriver(id) {
             try {
-                console.group("deldriver");
+                console.group("delDriver");
                 this.loading = true;
                 let result = "";
 
                 result = await API.graphql({
                     query: mutations.delDriver,
+                    variables: { id: id },
+                    authToken: this.userStore.token
+                });
+
+                this.loading = false;
+                console.groupEnd();
+                return result;
+
+            } catch (error) {
+                console.error(error);
+                this.loading = false;
+                console.groupEnd();
+                throw error;
+            }
+        },
+
+        async delTrip(id) {
+            try {
+                console.group("delTrip");
+                this.loading = true;
+                let result = "";
+
+                result = await API.graphql({
+                    query: mutations.delTrip,
                     variables: { id: id },
                     authToken: this.userStore.token
                 });
