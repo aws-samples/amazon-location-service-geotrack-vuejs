@@ -193,8 +193,6 @@ Resources:
       KeySchema:
         - AttributeName: id
           KeyType: HASH
-        - AttributeName: createdAt
-          KeyType: RANGE
       TimeToLiveSpecification:
         AttributeName: expireAt
         Enabled: true
@@ -206,7 +204,7 @@ Resources:
               AttributeName: status
               KeyType: "HASH"
             - 
-              AttributeName: id
+              AttributeName: createdAt
               KeyType: "RANGE"
           Projection: 
             ProjectionType: "ALL"
@@ -233,18 +231,18 @@ Resources:
             TableName: !Ref TripsTable
             TableArn: !GetAtt TripsTable.Arn
       Functions:
-        allDrivers:
+        listDrivers:
           Runtime:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: DriversTable
-          CodeUri: ./webapp/src/resolvers/allDrivers.js
-        allTrips:
+          CodeUri: ./webapp/src/resolvers/listDrivers.js
+        listTrips:
           Runtime:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: TripsTable
-          CodeUri: ./webapp/src/resolvers/allTrips.js
+          CodeUri: ./webapp/src/resolvers/listTrips.js
         statusTrips:
           Runtime:
             Name: APPSYNC_JS
@@ -262,46 +260,84 @@ Resources:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: TripsTable
-          CodeUri: ./webapp/src/resolvers/getTrip.js
+          CodeUri: ./webapp/src/resolvers/getById.js
         getDriver:
           Runtime:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: DriversTable
-          CodeUri: ./webapp/src/resolvers/getDriver.js
-        addDriver:
+          CodeUri: ./webapp/src/resolvers/getById.js
+        delDriver:
           Runtime:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: DriversTable
-          CodeUri: ./webapp/src/resolvers/addDriver.js
-        addTrip:
+          CodeUri: ./webapp/src/resolvers/delById.js
+        saveDriver:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/saveById.js
+        addDriverTrip:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/addDriverTrip.js
+        removeDriverTrip:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: DriversTable
+          CodeUri: ./webapp/src/resolvers/removeDriverTrip.js
+        saveTrip:
           Runtime:
             Name: APPSYNC_JS
             Version: "1.0.0"
           DataSource: TripsTable
-          CodeUri: ./webapp/src/resolvers/addTrip.js
+          CodeUri: ./webapp/src/resolvers/saveById.js
+        delTrip:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: TripsTable
+          CodeUri: ./webapp/src/resolvers/delById.js
       Resolvers:
         Mutation:
-          addDriver:
+          saveDriver:
             Runtime:
               Name: APPSYNC_JS
               Version: "1.0.0"
             Pipeline:
-              - addDriver
-          addTrip:
+              - saveDriver
+          delDriver:
             Runtime:
               Name: APPSYNC_JS
               Version: "1.0.0"
             Pipeline:
-              - addTrip
+              - delDriver
+          saveTrip:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - saveTrip
+              - addDriverTrip
+          delTrip:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - delTrip
+              - removeDriverTrip
         Query:
-          allTrips:
+          listTrips:
             Runtime:
               Name: APPSYNC_JS
               Version: "1.0.0"
             Pipeline:
-              - allTrips
+              - listTrips
               - hydrateTrips
           statusTrips:
             Runtime:
@@ -310,31 +346,15 @@ Resources:
             Pipeline:
               - statusTrips
               - hydrateTrips
-          allDrivers:
+          listDrivers:
             Runtime:
               Name: APPSYNC_JS
               Version: "1.0.0"
             Pipeline:
-              - allDrivers
-
-  ApiGw:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Sub ${ProjectName}-${EnvironmentName}-api
-      StageName: v1
-      Cors:
-        AllowOrigin: "'*'"
-        AllowHeaders: "'*'"
-        AllowMethods: "'OPTIONS,POST,GET,PUT,DELETE'"
-      Auth:
-        DefaultAuthorizer: TokenAuthorizer
-        Authorizers:
-          TokenAuthorizer:
-            UserPoolArn: !GetAtt CognitoUserPool.Arn
-        AddDefaultAuthorizerToCorsPreflight: False
+              - listDrivers
 
   S3WebAppBucket:
-    Type: 'AWS::S3::Bucket'
+    Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
       BucketEncryption:

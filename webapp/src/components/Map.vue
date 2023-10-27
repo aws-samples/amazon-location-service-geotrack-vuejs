@@ -52,7 +52,6 @@ onUnmounted(() => {
 
 function flyToMap(position, color = null) {
   let marker = null
-  console.log(position)
   if (color) {
     marker = new maplibregl.Marker({ color: color }).setLngLat(position).addTo(map.map);
   } else {
@@ -71,11 +70,12 @@ watch(depCoord, (newPosition) => {
 
 watch(destCoord, (newPosition) => {
   flyToMap(newPosition, "#a34a07")
+  showGeoFence(geoStore.calculateGeoFence([newPosition.lng, newPosition.lat]));
 });
 
-watch(geoFencePolygon, (newGeoFencePolygon) => {
-  showGeoFence(newGeoFencePolygon)
-});
+// watch(geoFencePolygon, (newGeoFencePolygon) => {
+//   showGeoFence(newGeoFencePolygon)
+// });
 
 watch(routeSteps, (newSteps) => {
   mapFit()
@@ -353,7 +353,7 @@ async function initMap() {
         const markerDep = new maplibregl.Marker().setLngLat(props.routeParams.geoStart).addTo(map.map);
         const markerDest = new maplibregl.Marker({ color: "#a34a07" }).setLngLat(props.routeParams.geoEnd).addTo(map.map);
         mapFit()
-        showRoute(geoStore.routeSteps)
+        showRoute(routeSteps)
       }
 
       if (props.action && props.action === "display_routes") {

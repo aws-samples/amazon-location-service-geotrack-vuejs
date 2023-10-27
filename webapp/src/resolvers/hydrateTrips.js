@@ -7,10 +7,16 @@ export function request(ctx) {
     }
 
     let drivers = []
+    let ids = []
 
     for (const idx in ctx.prev.result.trips) {
         let record = ctx.prev.result.trips[idx]
-        drivers.push(util.dynamodb.toMapValues({ "id": record.driver.id }))
+        if (record.driver.id != null) {
+            if (!ids.includes(record.driver.id)) {
+                ids.push(record.driver.id)            
+                drivers.push(util.dynamodb.toMapValues({ "id": record.driver.id }))
+            }
+        }
     }
 
     return dynamoDBBatchGetItem(drivers)

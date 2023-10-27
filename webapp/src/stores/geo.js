@@ -4,6 +4,8 @@ import { API, graphqlOperation } from "aws-amplify";
 import * as mutations from "../graphql/mutations";
 import * as queries from "../graphql/queries";
 import { Auth } from "aws-amplify";
+import circle from '@turf/circle'
+
 // import * as subscriptions from "../graphql/subscriptions";
 // import { v4 as uuidv4 } from 'uuid';
 
@@ -20,9 +22,9 @@ export const useGeoStore = defineStore("geo", {
         deviceRec: "",
         depCoord: [],
         destCoord: [],
-        routeSummary: null,
-        routeSteps: null,
-        geoFencePolygon: null,        
+        routeSummary: {},
+        routeSteps: [],
+        geoFencePolygon: null,
         devicesIdsInRoute: [],
         geoFenceList: []
     }),
@@ -31,16 +33,16 @@ export const useGeoStore = defineStore("geo", {
         uniqueId() {
             const dateString = Date.now().toString(36);
             const randomness = Math.random()
-              .toString(36)
-              .slice(2);
+                .toString(36)
+                .slice(2);
             return dateString + randomness;
-          },
+        },
 
         ddbExpirationTime(days) {
             let date = new Date();
             date.setDate(date.getDate() + days);
             return date;
-          },
+        },
 
         async fetchDevicesIdsInRoute() {
             try {
@@ -51,11 +53,11 @@ export const useGeoStore = defineStore("geo", {
                     query: queries.deviceIdByTripStatus,
                     variables: { status: "inroute" },
                     authToken: this.userStore.token
-                });                
-                for (let i = 0; i < results.data.statusTrips.trips.length; i++) {                                                                
+                });
+                for (let i = 0; i < results.data.statusTrips.trips.length; i++) {
                     deviceIds.push(results.data.statusTrips.trips[i].driver.deviceId)
-                }                
-                console.log("Drivers in rounte: " + deviceIds.length);                
+                }
+                console.log("Drivers in rounte: " + deviceIds.length);
                 console.groupEnd();
                 return deviceIds;
             } catch (error) {
@@ -63,7 +65,7 @@ export const useGeoStore = defineStore("geo", {
                 console.groupEnd();
                 throw error;
             }
-        },       
+        },
 
         async saveGeoFence(name, polygonVertices) {
             const locationService = new Location({
@@ -108,6 +110,56 @@ export const useGeoStore = defineStore("geo", {
                     throw error;
                 }
             });
+        },
+
+        async calculateRoute() {
+            const locationService = new Location({
+                credentials: await Auth.currentUserCredentials(),
+                region: import.meta.env.VITE_AWS_REGION,
+            });
+            
+            return new Promise((resolve, reject) => {
+                console.group("calculateRoute");
+                var params = {
+                    CalculatorName: import.meta.env.VITE_GEOROUTE_CALCULATION,
+                    DeparturePosition: [
+                        this.depCoord.lng,
+                        this.depCoord.lat,
+                    ],
+                    DestinationPosition: [
+                        this.destCoord.lng,
+                        this.destCoord.lat,
+                    ],
+                    DepartNow: false,
+                    IncludeLegGeometry: true,
+                    TravelMode: 'Car'
+                };
+
+                locationService.calculateRoute(params, function (err, data) {
+                    if (err) {
+                        console.error(err, err.stack);
+                        console.groupEnd();
+                        reject(null);
+                    }
+                    else {
+                        this.routeSteps = [...data.Legs[0].Geometry.LineString];
+                        this.routeSummary = data.Summary;
+                        console.groupEnd();
+                        resolve({ "summary": data.Summary, "steps": [...data.Legs[0].Geometry.LineString] });
+                    }
+                })
+            });
+        },
+
+        calculateGeoFence(center) {
+            var options = {
+                steps: 10,
+                units: "kilometers",
+                options: {},
+            };
+            var radius = 1;
+            var polygon = circle(center, radius, options);
+            return polygon.geometry.coordinates
         },
 
         async fetchGeoFenceItems() {
@@ -160,7 +212,7 @@ export const useGeoStore = defineStore("geo", {
                     query: queries.listTrips,
                     authToken: this.userStore.token
                 });
-                tripsList = [...tripResults.data.allTrips.trips]
+                tripsList = [...tripResults.data.listTrips.trips]
                 this.loading = false;
                 console.groupEnd();
                 return tripsList;
@@ -182,7 +234,7 @@ export const useGeoStore = defineStore("geo", {
                     query: queries.listDrivers,
                     authToken: this.userStore.token
                 });
-                driversList = [...driverResults.data.allDrivers.drivers]
+                driversList = [...driverResults.data.listDrivers.drivers]
                 this.loading = false;
                 console.groupEnd();
                 return driversList;
@@ -194,9 +246,9 @@ export const useGeoStore = defineStore("geo", {
             }
         },
 
-        async createDriver(driverRecord) {
+        async saveDriver(driverRecord) {
             try {
-                console.group("createDriver");
+                console.group("saveDriver");
                 this.loading = true;
                 let result = "";
 
@@ -206,10 +258,11 @@ export const useGeoStore = defineStore("geo", {
                     deliveryType: driverRecord.deliveryType,
                     deviceType: driverRecord.deviceType,
                     deviceId: driverRecord.deviceId,
+                    trips: []
                 }
 
                 if (driverRecord.id != null && driverRecord.id.length > 2) {
-                    driverInput["id"] = driverRecordid
+                    driverInput["id"] = driverRecord.id
                 }
 
                 if (driverRecord.status != null && driverRecord.status.length > 2) {
@@ -218,8 +271,9 @@ export const useGeoStore = defineStore("geo", {
                     driverInput["status"] = "active"
                 }
 
+
                 result = await API.graphql({
-                    query: mutations.createDriver,
+                    query: mutations.saveDriver,
                     variables: { input: driverInput },
                     authToken: this.userStore.token
                 });
@@ -227,7 +281,6 @@ export const useGeoStore = defineStore("geo", {
                 this.loading = false;
                 this.driverRec = result;
                 console.groupEnd();
-                console.log(result);
                 return result;
             } catch (error) {
                 console.error(error);
@@ -237,18 +290,22 @@ export const useGeoStore = defineStore("geo", {
             }
         },
 
-        async createTrip(tripRecord) {
+        async saveTrip(tripRecord) {
             try {
-                console.group("createTrip");                
+                console.group("saveTrip");
                 this.loading = true;
                 let result = "";
-
-                console.log(tripRecord);
+                let route = null;
+                
+                console.log("calculating routing")
+                route = await this.calculateRoute()
+                
+                this.geoFencePolygon = this.calculateGeoFence([this.destCoord.lng, this.destCoord.lat]);
 
                 const geoFenceId = await this.saveGeoFence(
                     this.uniqueId(),
                     this.geoFencePolygon[0]
-                    );
+                );
 
                 if (geoFenceId == null) {
                     console.error("Error saving geoFence")
@@ -260,9 +317,9 @@ export const useGeoStore = defineStore("geo", {
                     geoStart: this.depCoord,
                     labelEnd: tripRecord.trip.labelEnd,
                     geoEnd: this.destCoord,
-                    distance: Math.round(this.routeSummary.Distance).toString(),
+                    distance: Math.round(route.summary.Distance).toString(),
                     duration: Math.round(
-                        this.routeSummary.DurationSeconds / 60
+                        route.summary.DurationSeconds / 60
                     ).toString(),
                     geoFenceId: geoFenceId,
                     //expireAt: Math.round(this.ddbExpirationTime(7).getTime()), // Expire the date 7 days from today - DynamoDb Expire
@@ -273,10 +330,8 @@ export const useGeoStore = defineStore("geo", {
                     clientPhone: tripRecord.trip.clientPhone,
                 }
 
-                console.log(tripInput);
-
                 result = await API.graphql({
-                    query: mutations.createTrip,
+                    query: mutations.saveTrip,
                     variables: { input: tripInput },
                     authToken: this.userStore.token
                 });
@@ -288,164 +343,30 @@ export const useGeoStore = defineStore("geo", {
                 console.error(error);
             }
         },
-        
 
-        async deldriver(id) {
+        async delDriver(id) {
             try {
                 console.group("deldriver");
                 this.loading = true;
-
-                var delInput = {
-                    id: id
-                }
-                const {
-                    // @ts-ignore
-                    data: { deleteDeliverydriver: result }
-                } = await API.graphql(graphqlOperation(deleteDeliverydriver, {
-                    input: delInput
-                }));
-
-                const {
-                    // @ts-ignore
-                    data: { listDeliveryInfos: { items: results } }
-                } = await API.graphql(graphqlOperation(listDeliveryInfos));
-
-                if (results && results.length > 0) {
-                    for (let i = 0; i < this.results.length; i++) {
-                        if (results[i].deliverydriver.id === id) {
-                            delInput.id = results[i].id
-                            const {
-                                // @ts-ignore
-                                data: { deleteDeliveryInfo: delinfo }
-                            } = await API.graphql(graphqlOperation(deleteDeliveryInfo, {
-                                input: delInput
-                            }));
-                            console.log(delinfo.id);
-                        }
-                    }
-                }
-
-                this.loading = false;
-                console.log(result.id);
-                console.groupEnd();
-            } catch (error) {
-                console.error(error);
-                this.loading = false;
-                console.groupEnd();
-                throw error;
-            }
-        },
-
-        async delDevice(id) {
-            try {
-                console.group("delDevice");
-                this.loading = true;
-
-                var delInput = {
-                    id: id
-                }
-
-                const {
-                    // @ts-ignore
-                    data: { deleteDevice: result }
-                } = await API.graphql(graphqlOperation(deleteDevice, {
-                    input: delInput
-                }));
-
-                this.loading = false;
-                console.log(result.id);
-                console.groupEnd();
-            } catch (error) {
-                console.error(error);
-                this.loading = false;
-                console.groupEnd();
-                throw error;
-            }
-        },
-
-        async delDelivery(id) {
-            try {
-                console.group("delDelivery");
-                this.loading = true;
-
-                var delInput = {
-                    id: id
-                }
-
-                const {
-                    // @ts-ignore
-                    data: { deleteDeliveryInfo: result }
-                } = await API.graphql(graphqlOperation(deleteDeliveryInfo, {
-                    input: delInput
-                }));
-
-                this.loading = false;
-                console.log(result.id);
-                console.groupEnd();
-            } catch (error) {
-                console.error(error);
-                this.loading = false;
-                console.groupEnd();
-                throw error;
-            }
-        },
-
-        async saveDeliveryInfo(id,
-            geoStart,
-            geoEnd,
-            duration,
-            distance,
-            geoFenceId,
-            userPhone,
-            expireAt,
-            routeStatus,
-            deliveryInfoDeliverydriverId) {
-            try {
-                console.group("saveadeliveryinfo");
-                this.loading = true;
                 let result = "";
 
-                var deliveryInfoInput = {
-                    deliveryInfoDeliverydriverId: deliveryInfoDeliverydriverId,
-                    geoStart: geoStart,
-                    geoEnd: geoEnd,
-                    duration: duration,
-                    distance: distance,
-                    geoFenceId: geoFenceId,
-                    userPhone: userPhone,
-                    expireAt: expireAt,
-                    status: routeStatus,
-                }
-
-                if (id != null && id.length > 2) {
-                    deliveryInfoInput["id"] = id
-
-                    const {
-                        // @ts-ignore
-                        data: { updateDeliveryInfo: deliveryInfoObj }
-                    } = await API.graphql(graphqlOperation(updateDeliveryInfo, {
-                        input: deliveryInfoInput
-                    }));
-                    result = deliveryInfoObj
-                } else {
-                    const {
-                        // @ts-ignore
-                        data: { createDeliveryInfo: deliveryInfoObj }
-                    } = await API.graphql(graphqlOperation(createDeliveryInfo, {
-                        input: deliveryInfoInput
-                    }));
-                    result = deliveryInfoObj
-                }
+                result = await API.graphql({
+                    query: mutations.delDriver,
+                    variables: { id: id },
+                    authToken: this.userStore.token
+                });
 
                 this.loading = false;
                 console.groupEnd();
                 return result;
+
             } catch (error) {
                 console.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
             }
-        }
+        },
+
     },
 });

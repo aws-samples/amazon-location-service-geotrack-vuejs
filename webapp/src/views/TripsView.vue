@@ -4,7 +4,6 @@ import { onBeforeMount } from "vue";
 import Location from "aws-sdk/clients/location";
 import { Auth } from "aws-amplify";
 import Map from "../components/Map.vue";
-import circle from '@turf/circle'
 import Header from "../components/Header.vue";
 import { useGeoStore } from "../stores/geo";
 import { VDataTable } from "vuetify/labs/VDataTable";
@@ -106,10 +105,9 @@ const trip = reactive({
 
 async function onSubmit() {
   try {
+    let tripRec = await geoStore.saveTrip({ trip });
 
-    let tripRec = await geoStore.createTrip({ trip });
-
-    console.log("Trip saved " + tripRec);
+    console.log("Trip saved");
 
     buttonAddRow.value = false;
     await loadTable();
@@ -127,7 +125,8 @@ function onReset() {
 async function toggleShowMap(item) {
   geoStore.depCoord = item.geoStart;
   geoStore.destCoord = item.geoEnd;
-  await calculateRoute()
+  // populate the route information
+  route = await geoStore.calculateRoute()
   routeParams.value = item
   showRoute.value = true
 }
@@ -206,54 +205,9 @@ async function searchCoords(val, category) {
 }
 
 async function calculateRoute() {
-  const locationService = new Location({
-    credentials: await Auth.currentUserCredentials(),
-    region: import.meta.env.VITE_AWS_REGION,
-  });
-  // Create geofence
-  calculateGeoFence([geoStore.destCoord.lng, geoStore.destCoord.lat]);
-  return new Promise((resolve, reject) => {
-    console.group("calculateRoute");
-    var params = {
-      CalculatorName: import.meta.env.VITE_GEOROUTE_CALCULATION,
-      DeparturePosition: [
-        geoStore.depCoord.lng,
-        geoStore.depCoord.lat,
-      ],
-      DestinationPosition: [
-        geoStore.destCoord.lng,
-        geoStore.destCoord.lat,
-      ],
-      DepartNow: false,
-      IncludeLegGeometry: true,
-      TravelMode: 'Car'
-    };
-
-    locationService.calculateRoute(params, function (err, data) {
-      if (err) {
-        console.error(err, err.stack);
-        console.groupEnd();
-        reject("Rejected");
-      }
-      else {
-        geoStore.routeSteps = [...data.Legs[0].Geometry.LineString];
-        geoStore.routeSummary = data.Summary;
-        console.groupEnd();
-        resolve("Resolved");
-      }
-    })
-  });
-}
-
-function calculateGeoFence(center) {
-  var options = {
-    steps: 10,
-    units: "kilometers",
-    options: {},
-  };
-  var radius = 1;
-  var polygon = circle(center, radius, options);
-  geoStore.geoFencePolygon = polygon.geometry.coordinates
+    let route = await geoStore.calculateRoute()
+    geoStore.routeSteps = route.steps
+    geoStore.routeSummary = route.summary
 }
 
 function setDestCoord(val) {
@@ -299,8 +253,16 @@ function resetVariables() {
       </v-btn-toggle>
 
       <v-card>
-        <v-data-table :headers="dataHeaders" :items="tripsData" item-value="name" class="elevation-1" show-select
-          density="compact">
+        <v-data-table 
+          :headers="dataHeaders" 
+          :items="tripsData" 
+          select-strategy="single" 
+          item-value="id" 
+          class="elevation-1" 
+          show-select
+          density="compact"
+          v-model="selected"
+          >
 
           <template v-slot:item.delete="{ item }">
             <v-btn variant="plain" icon="mdi-map-legend" @click="toggleShowMap(item)"></v-btn>
@@ -322,18 +284,30 @@ function resetVariables() {
               <v-text-field v-model="trip.clientPhone" label="Client's mobile phone" :maxlength="20" />
 
               <v-autocomplete v-model="trip.geoStart" :items="items.departure" v-model:search="depSearch"
-                @update:modelValue="setDepCoord" clearable hide-details no-filter return-object
+                @update:modelValue="setDepCoord" 
+                :rules="[
+                  () => !!trip.geoStart || 'This field is required'
+                ]"
+                clearable hide-details no-filter return-object
                 label="Search for departure"></v-autocomplete>
 
               <br />
 
               <v-autocomplete v-model="trip.geoEnd" :items="items.destination" v-model:search="destSearch"
-                @update:modelValue="setDestCoord" clearable hide-details no-filter return-object
+                @update:modelValue="setDestCoord" 
+                :rules="[
+                  () => !!trip.geoEnd || 'This field is required'
+                ]"
+                clearable hide-details no-filter return-object
                 label="Search for destination"></v-autocomplete>
 
               <br />
 
-              <v-autocomplete v-model="trip.driver" :items="driversData" item-title="fullName" item-value="id" clearable
+              <v-autocomplete v-model="trip.driver" :items="driversData" item-title="fullName" 
+                item-value="id" clearable
+                :rules="[
+                  () => !!trip.driver || 'This field is required'
+                ]"
                 return-object label="Pick a driver"></v-autocomplete>
 
               <br />

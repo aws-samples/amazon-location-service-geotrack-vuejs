@@ -1,27 +1,51 @@
 
-export const createDriver = /* GraphQL */ `
-mutation CreateDriver (
+export const saveDriver = /* GraphQL */ `
+mutation SaveDriver (
   $input: DriverInput!
   ) {
-  addDriver(input: $input) {
+  saveDriver(input: $input) {
     id
     fullName
     email
     createdAt 
+    trips {
+      id
+      createdAt
+    }
   }
 }
 `;
 
-export const createTrip = /* GraphQL */ `
-mutation CreateTrip (
+export const delDriver = /* GraphQL */ `
+mutation DeleteDriver (
+  $id: ID!
+  ) {
+  delDriver(id: $id) {
+    id
+  }
+}
+`;
+
+export const saveTrip = /* GraphQL */ `
+mutation SaveTrip (
   $input: TripInput!
   ) {
-  addTrip(input: $input) {
+  saveTrip(input: $input) {
     id
     driver {
       id
     }
     createdAt 
+  }
+}
+`;
+
+export const delTrip = /* GraphQL */ `
+mutation DeleteTrip (
+  $id: ID!
+  ) {
+  delTrip(id: $id) {
+    id
   }
 }
 `;

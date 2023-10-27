@@ -22,7 +22,7 @@ const driver = reactive({
 const driversData = ref([])
 const optionsDelivery = ["Motorcycle", "Car"];
 const optionsDevice = ["iPhone", "Android", "IoT"];
-const selected = [];
+const selected = ref([])
 const buttonAddRow = ref(false);
 const buttonRemoveRow = ref(false);
 
@@ -81,7 +81,7 @@ function onReset() {
 async function onSubmit() {
   // Check for deviceId
   try {
-    let driverRec = await geoStore.createDriver({
+    let driverRec = await geoStore.saveDriver({
       id: driver.driverId,
       fullName: driver.fullName,
       email: driver.email,
@@ -102,20 +102,15 @@ async function onSubmit() {
 
 async function removeRow() {
   try {
-    for (let i = 0; i < this.selected.length; i++) {
-      await this.$store.dispatch("general/delAgent", {
-        id: this.selected[i].driverId,
-      });
-      console.log("Agent Deconsted ");
-
-      await this.$store.dispatch("general/delDevice", {
-        id: this.selected[i].deviceId,
-      });
+    for (let i = 0; i < selected.value.length; i++) {
+      console.log(selected.value[i])
+      let driverRec = await geoStore.delDriver(selected.value[i])
+      console.log("Delete: " + driverRec.id)      
     }
+    buttonRemoveRow.value = false
 
-    this.loadTable();
+    loadTable();
 
-    console.log("Device Deconsted");
   } catch (error) {
     console.error(error);
   }
@@ -130,13 +125,21 @@ async function removeRow() {
       <v-btn size="small" variant="outlined" prepend-icon="mdi-plus-circle-outline" @click="buttonAddRow = true">
         Add User
       </v-btn>
-      <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="buttonRemoveRow">
+      <v-btn size="small" variant="outlined" prepend-icon="mdi-delete-circle-outline" @click="(selected.length > 0) ? buttonRemoveRow = true : buttonRemoveRow = false">
         Del User
       </v-btn>
     </v-btn-toggle>
       <v-card>
-        <v-data-table :headers="dataHeaders" :items="driversData" item-value="name" class="elevation-1" show-select
-          density="compact"></v-data-table>
+        <v-data-table 
+          :headers="dataHeaders" 
+          :items="driversData" 
+          select-strategy="single" 
+          item-value="id" 
+          class="elevation-1" 
+          show-select
+          density="compact"
+          v-model="selected"
+        ></v-data-table>
       </v-card>
     </v-container>
 
@@ -207,18 +210,27 @@ async function removeRow() {
       </v-dialog>
     </v-row>
 
-    <v-dialog v-model="buttonRemoveRow" persistent>
-      <v-card>
-        <v-card-text>
-          <v-icon name="error_outline" size="xl" color="warning" />
-          <span>Deconste {{ selected.length }} agents?</span>
-        </v-card-text>
+    <v-row justify="center">
+      <v-dialog v-model="buttonRemoveRow" width="500">
+        <v-card>
+          <v-form @submit.prevent="onSubmit">
+            <v-card-title>
+              <span class="text-h6">Confirm deleting Driver?</span>
+            </v-card-title>
 
-        <v-card-actions align="right">
-          <v-btn flat label="No" color="black" @click="buttonRemoveRow = false" />
-          <v-btn flat label="Yes" color="black" @click="removeRow" />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+            <v-card-actions align="right" class="text-primary">
+              <v-btn class="text-none" color="#4f545c" prepend-icon="mdi-check" variant="flat" @click="removeRow">
+                Yes
+              </v-btn>
+
+              <v-btn border class="text-none" color="#2f3136" prepend-icon="mdi-cancel" variant="outlined"
+                @click="buttonRemoveRow = false">
+                No
+              </v-btn>
+            </v-card-actions>
+          </v-form>
+        </v-card>
+      </v-dialog>
+    </v-row>
   </div>
 </template>

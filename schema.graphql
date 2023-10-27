@@ -18,6 +18,7 @@ type Driver {
 	status: DriverStatus
 	createdAt: AWSDateTime
 	updatedAt: AWSDateTime	
+	trips: [Trip]
 }
 
 type Trip {
@@ -47,6 +48,7 @@ input DriverInput {
 	status: DriverStatus
 	createdAt: AWSDateTime
 	updatedAt: AWSDateTime	
+	trips: [TripInput]
 }
 
 input TripInput {
@@ -81,16 +83,19 @@ enum DriverStatus {
 }
 
 type Mutation {
-	addDriver(input: DriverInput): Driver
-	addTrip(input: TripInput): Trip
+	saveDriver(input: DriverInput): Driver
+	delDriver(id: ID!): Driver
+	saveTrip(input: TripInput): Trip
+	delTrip(id: ID!): Trip	
 }
 
 type Query {
 	getDriver(id: ID!): Driver
+	listDrivers(limit: Int, nextToken: String): PaginatedDrivers
+	addDriverTrip(driverId: ID!, tripId: ID!): Driver
+	removeDriverTrip(driverId: ID!, tripId: ID!): Driver
 	getTrip(id: ID!): Trip
-	getDriverTrips(id: ID!): [Trip]
-	allDrivers(limit: Int, nextToken: String): PaginatedDrivers
-	allTrips(limit: Int, nextToken: String): PaginatedTrips
+	listTrips(limit: Int, nextToken: String): PaginatedTrips
 	statusTrips(status: TripStatus, limit: Int, nextToken: String): PaginatedTrips
 }
 

@@ -1,6 +1,6 @@
 export const listDrivers = /* GraphQL */ `
 query ListDrivers {
-  allDrivers {
+  listDrivers {
     drivers {
       deliveryType
       deviceId
@@ -31,7 +31,7 @@ query DeviceIdByTripStatus (
 
 export const listTrips = /* GraphQL */ `
 query ListTrips {
-  allTrips {
+  listTrips {
     trips {
       createdAt
       duration
