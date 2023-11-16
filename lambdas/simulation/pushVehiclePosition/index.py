@@ -74,7 +74,7 @@ def get_random(min, max):
         return num
     
 def handler(event, context):
-    #print(event)    
+    print(event)    
     route = route_calculation(event['geoStart'],event['geoEnd'])
     if 'Legs' in route:
         for step in route['Legs'][0]['Steps']:

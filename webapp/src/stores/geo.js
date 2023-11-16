@@ -112,11 +112,18 @@ export const useGeoStore = defineStore("geo", {
             });
         },
 
-        async calculateRoute() {
+        async calculateRoute(depLngLat=null, destLngLat=null) {
             const locationService = new Location({
                 credentials: await Auth.currentUserCredentials(),
                 region: import.meta.env.VITE_AWS_REGION,
             });
+
+            if (depLngLat) {
+                this.depCoord = depLngLat;
+            }
+            if (destLngLat) {
+                this.destCoord = destLngLat;
+            }
             
             return new Promise((resolve, reject) => {
                 console.group("calculateRoute");
@@ -141,9 +148,10 @@ export const useGeoStore = defineStore("geo", {
                         console.groupEnd();
                         reject(null);
                     }
-                    else {
+                    else {                        
                         this.routeSteps = [...data.Legs[0].Geometry.LineString];
                         this.routeSummary = data.Summary;
+
                         console.groupEnd();
                         resolve({ "summary": data.Summary, "steps": [...data.Legs[0].Geometry.LineString] });
                     }

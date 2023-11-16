@@ -1,7 +1,7 @@
 <script setup>
   import { Authenticator } from '@aws-amplify/ui-vue';
-  import { Hub, Logger } from 'aws-amplify';
   import '@aws-amplify/ui-vue/styles.css';
+  import { Hub, Logger } from 'aws-amplify';
   import { useRouter } from 'vue-router'
 
   const router = useRouter();

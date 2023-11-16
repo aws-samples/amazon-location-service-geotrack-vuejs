@@ -92,7 +92,7 @@ def handler(event, context):
     print(response.json())
 
     if 'data' in response.json():
-      items = response.json()['data']['statusTrips']
+      items = response.json()['data']['statusTrips']['trips']
       for row in items:
         
         response = lambda_client.invoke(
@@ -100,7 +100,6 @@ def handler(event, context):
             InvocationType='Event',
             Payload=json.dumps(row)
         )
-        logger.info(row['id'] + " StatusCode : " + str(response['ResponseMetadata']['HTTPStatusCode']))
 
     proxy_response['statusCode']=200
     proxy_response["body"] = { 'msg': 'Processed ' + str(len(items)) + ' vehicles' }

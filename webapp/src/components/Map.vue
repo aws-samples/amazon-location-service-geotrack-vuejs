@@ -16,7 +16,7 @@ import { useGeoStore } from "../stores/geo";
 
 
 const geoStore = useGeoStore();
-const { depCoord, destCoord, routeSteps, geoFencePolygon } = storeToRefs(geoStore)
+const { depCoord, destCoord, routeSteps } = storeToRefs(geoStore)
 
 const props = defineProps({
   action: {
@@ -77,6 +77,7 @@ watch(destCoord, (newPosition) => {
 //   showGeoFence(newGeoFencePolygon)
 // });
 
+// Used to render the route during TripView route creation
 watch(routeSteps, (newSteps) => {
   mapFit()
   showRoute(newSteps)
@@ -181,12 +182,13 @@ function mapFit() {
   );
 }
 
-function showRoute(newSteps) {
+async function showRoute(steps) {
   var coordinates = [];
-  newSteps.map((item) => {
+  steps.map((item) => {
     coordinates.push(item);
   });
   if (map.map.getLayer("route")) map.map.removeLayer("route");
+  if (map.map.getLayer("symbols")) map.map.removeLayer("symbols");
   if (map.map.getSource("route")) map.map.removeSource("route");
 
   map.map.addSource("route", {
@@ -215,6 +217,7 @@ function showRoute(newSteps) {
       "line-opacity": 0.5,
     },
   });
+
 }
 
 function showGeoFence(geoFencePolygon) {
@@ -350,10 +353,11 @@ async function initMap() {
 
     map.map.on('load', async function () {
       if (props.action && props.action === "show_route") {
+        let route = await geoStore.calculateRoute(props.routeParams.geoStart,props.routeParams.geoEnd)  
         const markerDep = new maplibregl.Marker().setLngLat(props.routeParams.geoStart).addTo(map.map);
         const markerDest = new maplibregl.Marker({ color: "#a34a07" }).setLngLat(props.routeParams.geoEnd).addTo(map.map);
         mapFit()
-        showRoute(routeSteps)
+        showRoute(route.steps)
       }
 
       if (props.action && props.action === "display_routes") {

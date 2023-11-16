@@ -1,4 +1,4 @@
-type Coordinate {
+type Coordinate @aws_iam @aws_cognito_user_pools {
 	lat: Float
 	lng: Float
 }
@@ -8,7 +8,7 @@ input CoordinateInput {
 	lng: Float
 }
 
-type Driver {
+type Driver @aws_iam @aws_cognito_user_pools {
 	id: ID
 	email: AWSEmail
 	fullName: String
@@ -17,11 +17,42 @@ type Driver {
 	deviceType: String
 	status: DriverStatus
 	createdAt: AWSDateTime
-	updatedAt: AWSDateTime	
+	updatedAt: AWSDateTime
 	trips: [Trip]
 }
 
-type Trip {
+input DriverInput {
+	id: ID
+	email: AWSEmail
+	fullName: String
+	deliveryType: String
+	deviceId: String
+	deviceType: String
+	status: DriverStatus
+	createdAt: AWSDateTime
+	updatedAt: AWSDateTime
+	trips: [TripInput]
+}
+
+enum DriverStatus {
+	active
+	inactive
+	banned
+}
+
+type PaginatedDrivers {
+	drivers: [Driver!]!
+	nextToken: String
+}
+
+type PaginatedTrips @aws_iam
+@aws_cognito_user_pools {
+	trips: [Trip!]!
+	nextToken: String
+}
+
+type Trip @aws_iam
+@aws_cognito_user_pools {
 	id: ID
 	driver: Driver
 	labelStart: String
@@ -36,19 +67,6 @@ type Trip {
 	status: TripStatus
 	createdAt: AWSDateTime
 	updatedAt: AWSDateTime
-}
-
-input DriverInput {
-	id: ID
-	email: AWSEmail
-	fullName: String
-	deliveryType: String
-	deviceId: String
-	deviceType: String
-	status: DriverStatus
-	createdAt: AWSDateTime
-	updatedAt: AWSDateTime	
-	trips: [TripInput]
 }
 
 input TripInput {
@@ -68,25 +86,19 @@ input TripInput {
 	updatedAt: AWSTimestamp
 }
 
-enum TripStatus {  
-  completed
-  inroute
-  accepted
-  error
-  onhold
-}
-
-enum DriverStatus {  
-  active
-  inactive
-  banned
+enum TripStatus {
+	completed
+	inroute
+	accepted
+	error
+	onhold
 }
 
 type Mutation {
 	saveDriver(input: DriverInput): Driver
 	delDriver(id: ID!): Driver
 	saveTrip(input: TripInput): Trip
-	delTrip(id: ID!): Trip	
+	delTrip(id: ID!): Trip
 }
 
 type Query {
@@ -97,16 +109,8 @@ type Query {
 	getTrip(id: ID!): Trip
 	listTrips(limit: Int, nextToken: String): PaginatedTrips
 	statusTrips(status: TripStatus, limit: Int, nextToken: String): PaginatedTrips
-}
-
-type PaginatedDrivers {
-    drivers: [Driver!]!
-    nextToken: String
-}
-
-type PaginatedTrips {
-    trips: [Trip!]!
-    nextToken: String
+		@aws_iam
+@aws_cognito_user_pools
 }
 
 schema {

@@ -123,10 +123,6 @@ function onReset() {
 }
 
 async function toggleShowMap(item) {
-  geoStore.depCoord = item.geoStart;
-  geoStore.destCoord = item.geoEnd;
-  // populate the route information
-  route = await geoStore.calculateRoute()
   routeParams.value = item
   showRoute.value = true
 }
@@ -206,6 +202,7 @@ async function searchCoords(val, category) {
 
 async function calculateRoute() {
     let route = await geoStore.calculateRoute()
+    // Adding to plinia geoStore.Routes Steps triggers a watch at Maps
     geoStore.routeSteps = route.steps
     geoStore.routeSummary = route.summary
 }
@@ -361,7 +358,7 @@ function resetVariables() {
           <span class="text-h5">Route Summary</span>
         </v-card-title>
 
-        <v-list>
+        <!-- <v-list>
           <v-list-item>
             <v-list-item-subtitle>Estimate Distance</v-list-item-subtitle>
             <div>{{ Math.round(geoStore.routeSummary.Distance) }} Km</div>
@@ -373,7 +370,7 @@ function resetVariables() {
             <v-list-item-subtitle>Estimate Duration</v-list-item-subtitle>
             <div>{{ Math.round(geoStore.routeSummary.DurationSeconds / 60) }} min</div>
           </v-list-item>
-        </v-list>
+        </v-list> -->
 
         <Map action="show_route" :routeParams="routeParams" />
 

@@ -11,8 +11,12 @@
   <body>
     <noscript>
       <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
-    </noscript>
+    </noscript>    
     <div id="app"></div>
+    <script>
+      window.global = window;
+      var exports = {};
+    </script>
     <!-- built files will be auto injected -->
   </body>
 </html>
