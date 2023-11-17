@@ -61,7 +61,7 @@ Resources:
     Type: AWS::Cognito::IdentityPool
     Properties:
       IdentityPoolName: !Sub ${ProjectName}-${EnvironmentName}-identity
-      AllowUnauthenticatedIdentities: false
+      AllowUnauthenticatedIdentities: true
       CognitoIdentityProviders: 
         - ClientId: !Ref CognitoUserPoolClient
           ProviderName: !GetAtt CognitoUserPool.ProviderName
@@ -84,6 +84,18 @@ Resources:
                   Ref: CognitoIdentityPool
               'ForAnyValue:StringLike':
                 'cognito-identity.amazonaws.com:amr': unauthenticated
+      Policies: 
+        - PolicyName: MapGeo
+          PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action: 
+                    - "geo:GetMapStyleDescriptor"
+                    - "geo:GetMapGlyphs"
+                    - "geo:GetMapSprites"
+                    - "geo:GetMapTile"                    
+                  Resource: !GetAtt Map.Arn
 
   # Create a role for authorized acces to AWS resources. Control what your user can access. This example only allows Lambda invokation
   # Only allows users in the previously created Identity Pool
