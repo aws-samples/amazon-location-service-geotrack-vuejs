@@ -10,7 +10,7 @@ Amazon Web Services, Inc. or Amazon Web Services EMEA SARL or both.
 <script setup>
 import { reactive, ref } from "vue";
 import { useUserStore } from "../stores/user";
-import { Auth } from "aws-amplify";
+import { getCurrentUser, signOut, fetchAuthSession } from 'aws-amplify/auth';
 import axios from "axios"
 const userStore = useUserStore();
 
@@ -24,9 +24,9 @@ const alert = reactive({
   icon: null
 });
 
-async function signOut() {
+async function userSignOut() {
   try {
-    await Auth.signOut();
+    await signOut();
     $router.push("/auth");
   } catch (error) {
     console.log("error signing out: ", error);
@@ -36,9 +36,10 @@ async function signOut() {
 async function simulate() {
   try {
     buttonSimulate.value = false
-    const currentSession = await Auth.currentSession();
+    const session = await fetchAuthSession();
+    const jwt = session.tokens.idToken
     const options = {
-      headers: { 'Authorization': currentSession.getIdToken().getJwtToken() }
+      headers: { 'Authorization': jwt }
     };
     await axios.post(import.meta.env.VITE_API_URL + "/launch", {}, options)
       .then(results => {
@@ -122,7 +123,7 @@ async function simulate() {
 
       <v-tooltip text="Logout" location="bottom">
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" icon @click="signOut">
+          <v-btn v-bind="props" icon @click="userSignOut">
             <v-icon>mdi-exit-to-app</v-icon>
           </v-btn>
         </template>

@@ -1,12 +1,11 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { onBeforeMount } from "vue";
-import Location from "aws-sdk/clients/location";
-import { Auth } from "aws-amplify";
+import { fetchAuthSession } from 'aws-amplify/auth';
 import Map from "../components/Map.vue";
 import Header from "../components/Header.vue";
+import { LocationClient, SearchPlaceIndexForTextCommand } from '@aws-sdk/client-location';
 import { useGeoStore } from "../stores/geo";
-import { VDataTable } from "vuetify/labs/VDataTable";
 
 const geoStore = useGeoStore();
 const showRoute = ref(false);
@@ -81,6 +80,15 @@ const dataHeaders = [
   },
 ]
 
+const locationClient = async () => {
+  const session = await fetchAuthSession();
+  const client = new LocationClient({
+    credentials: session.credentials,
+    region: import.meta.env.VITE_AWS_REGION,
+  });
+  return client;
+};
+
 onBeforeMount(async () => {
   await loadTable();
   driversData.value = await geoStore.listDrivers();
@@ -135,69 +143,73 @@ watch(destSearch, async (newValue) => {
   await searchCoords(newValue, "destination");
 });
 
-async function searchCoords(val, category) {
-  const locationService = new Location({
-    credentials: await Auth.currentUserCredentials(),
-    region: import.meta.env.VITE_AWS_REGION,
-  });
-  return new Promise(function (resolve, reject) {
+async function searchPlaceIndexForPosition(params) {
+  const locationService = await locationClient();
+  const command = new SearchPlaceIndexForPositionCommand(params);
+  const data = await locationService.send(command);
+
+  if (data && response.Results.length > 0) {
+      return data.Results[0].Place.Label
+  }
+  else {
+    return []
+  }
+};
+
+async function searchPlaceIndexForText(params) {
+  const locationService = await locationClient();
+  const command = new SearchPlaceIndexForTextCommand(params);
+  const data = await locationService.send(command);
+
+  if (data && data.Results.length > 0) {
     let placeOptions = []
-    if (val && val.lat) {
-      locationService.searchPlaceIndexForPosition(
-        {
-          IndexName: import.meta.env.VITE_GEOPLACE_INDEX,
-          MaxResults: 1,
-          Position: [val.lng, val.lat],
-        },
-        (err, response) => {
-          if (err) {
-            console.error(err);
-            reject(err);
-          } else if (response && response.Results.length > 0) {
-            resolve(response.Results[0].Place.Label);
-          }
-        }
-      );
-    } else if (val && val.length > 3) {
-      if (category == "departure") {
-        isLoadingDep.value = true;
-      }
-      else {
-        isLoadingDest.value = true
-      }
-      let longitude = -123.11335999999994;
-      let latitude = 49.260380000000055;
-      locationService.searchPlaceIndexForText(
-        {
-          IndexName: import.meta.env.VITE_GEOPLACE_INDEX,
-          Text: val,
-          MaxResults: 8,
-          BiasPosition: [longitude, latitude],
-        },
-        (err, response) => {
-          if (err) {
-            console.error(err);
-            reject(placeOptions);
-          } else if (response && response.Results.length > 0) {
-            for (var i = 0; i < response.Results.length; i++) {
-              placeOptions.push({
-                title: response.Results[i].Place.Label,
-                value: response.Results[i].Place.Geometry.Point,
-              });
-            }
-          }
-          if (category == "departure") {
-            items.departure = [...placeOptions]
-            isLoadingDep.value = true;
-          } else {
-            items.destination = [...placeOptions]
-            isLoadingDest.value = true;
-          }
-        }
-      );
-      resolve();
+    for (var i = 0; i < data.Results.length; i++) {
+      placeOptions.push({
+        title: data.Results[i].Place.Label,
+        value: data.Results[i].Place.Geometry.Point,
+      });    
     }
-  });
+    return placeOptions
+  }
+  else {
+    return []
+  }
+};
+
+async function searchCoords(val, category) {
+  let placeOptions = []
+
+  if (val && val.lat) {
+    let pos_params = {
+      IndexName: import.meta.env.VITE_GEOPLACE_INDEX,
+      MaxResults: 1,
+      Position: [val.lng, val.lat],
+    }
+
+    placeOptions = await searchPlaceIndexForPosition(pos_params)
+  }
+  else if (!val || val.length < 3) return false
+  else {
+
+    let longitude = -123.11335999999994;
+    let latitude = 49.260380000000055;
+    let params = {
+      IndexName: import.meta.env.VITE_GEOPLACE_INDEX,
+      Text: val,
+      MaxResults: 8,
+      BiasPosition: [longitude, latitude],
+    }
+
+    placeOptions = await searchPlaceIndexForText(params)
+
+    if (category == "departure") {
+      items.departure = [...placeOptions]
+      isLoadingDep.value = true;
+    } else {
+      items.destination = [...placeOptions]
+      isLoadingDest.value = true;
+    }
+  }
 }
 
 async function calculateRoute() {
@@ -346,7 +358,9 @@ function resetVariables() {
                 </v-card-actions>
               </div>
             </v-container>
-            <Map action="adding_route"  />
+            <Suspense>
+              <Map action="adding_route"  />
+            </Suspense>
           </v-form>
         </v-card>
       </v-dialog>
@@ -372,10 +386,12 @@ function resetVariables() {
           </v-list-item>
         </v-list> -->
 
-        <Map action="show_route" :routeParams="routeParams" />
+        <Suspense>
+          <Map action="show_route" :routeParams="routeParams" />
+        </Suspense>
 
         <v-card-actions>
-          <v-btn>Close</v-btn>
+          <v-btn @click="showRoute = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

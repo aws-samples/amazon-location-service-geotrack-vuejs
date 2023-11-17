@@ -1,22 +1,29 @@
 import { defineStore } from "pinia";
-import { Auth } from "aws-amplify";
+import { fetchUserAttributes, getCurrentUser } from 'aws-amplify/auth';
+import { ConsoleLogger } from 'aws-amplify/utils';
+import { configAmplify } from "../configAmplify";
+
+const logger = new ConsoleLogger('geotrack');
+configAmplify();
 
 export const useUserStore = defineStore("user", {
   state: () => ({
     user: null,
+    userAttributes: null,
+    userTokens: null
   }),
 
   getters: { 
     isAuthenticated: (state) => !!state.user,
-    token: (state) => state.user?.signInUserSession.idToken.jwtToken,
-    userId: (state) => state.user?.attributes.sub,
-    email: (state) => state.user?.attributes.email,
-    fullname: (state) => state.user?.attributes.given_name + " " + state.user?.attributes.family_name,
+    userId: (state) => state.userAttributes?.sub,
+    email: (state) => state.userAttributes?.email,
+    fullname: (state) => state.userAttributes?.given_name + " " + state.userAttributes?.family_name,
   },
   actions: {
     async getSession() {
         try {
-            this.user = await Auth.currentAuthenticatedUser();
+            this.user = await getCurrentUser();
+            this.userAttributes = await fetchUserAttributes();
             console.groupEnd();
           } catch (err) {
             console.error(err);

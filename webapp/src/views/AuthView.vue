@@ -1,12 +1,12 @@
 <script setup>
   import { Authenticator } from '@aws-amplify/ui-vue';
   import '@aws-amplify/ui-vue/styles.css';
-  import { Hub, Logger } from 'aws-amplify';
+  import { Hub, ConsoleLogger } from 'aws-amplify/utils';
   import { useRouter } from 'vue-router'
 
   const router = useRouter();
 
-  const logger = new Logger('My-Logger');
+  const logger = new ConsoleLogger('geotrack');
 
   function listenToAutoSignInEvent() {
     Hub.listen('auth', async ({ payload }) => {

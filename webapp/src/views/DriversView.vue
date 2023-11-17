@@ -4,7 +4,6 @@ import { onBeforeMount } from "vue";
 import Header from "../components/Header.vue";
 import { useUserStore } from "../stores/user";
 import { useGeoStore } from "../stores/geo";
-import { VDataTable } from "vuetify/labs/VDataTable";
 
 const userStore = useUserStore();
 const geoStore = useGeoStore();

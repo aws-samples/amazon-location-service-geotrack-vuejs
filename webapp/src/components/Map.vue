@@ -8,15 +8,26 @@
 import { computed, reactive, ref, watch } from "vue";
 import { onMounted, onUnmounted } from "vue";
 import { storeToRefs } from 'pinia'
+import { fetchAuthSession } from 'aws-amplify/auth';
 import maplibregl from "maplibre-gl";
-import { Signer } from "@aws-amplify/core";
-import Location from "aws-sdk/clients/location";
-import { Auth } from "aws-amplify";
+import { LocationClient, BatchGetDevicePositionCommand } from '@aws-sdk/client-location';
 import { useGeoStore } from "../stores/geo";
+import { ConsoleLogger } from 'aws-amplify/utils';
+import { withIdentityPoolId } from '@aws/amazon-location-utilities-auth-helper';
 
-
+const logger = new ConsoleLogger('geotrack');
+const authHelper = await withIdentityPoolId(import.meta.env.VITE_IDENTITY_POOL_ID); // use Cognito pool id for credentials
 const geoStore = useGeoStore();
 const { depCoord, destCoord, routeSteps } = storeToRefs(geoStore)
+
+const locationClient = async () => {
+  const session = await fetchAuthSession();
+  const client = new LocationClient({
+    credentials: session.credentials,
+    region: import.meta.env.VITE_AWS_REGION,
+  });
+  return client;
+};
 
 const props = defineProps({
   action: {
@@ -29,7 +40,6 @@ const props = defineProps({
 })
 
 const map = reactive({
-  credentials: null,
   map: null,
   center: [],
   zoom: 0
@@ -40,7 +50,6 @@ const posInterval = ref(null);
 const popUps = ref({})
 
 onMounted(async () => {
-  map.credentials = await Auth.currentUserCredentials();
   await initMap();
 });
 
@@ -83,30 +92,6 @@ watch(routeSteps, (newSteps) => {
   showRoute(newSteps)
 });
 
-function transformRequest(url, resourceType) {
-  if (resourceType === "Style" && !url.includes("://")) {
-    // resolve to an AWS URL
-    url =
-      "https://maps.geo." +
-      import.meta.env.VITE_AWS_REGION +
-      ".amazonaws.com/maps/v0/maps/" +
-      url +
-      "/style-descriptor";
-  }
-  if (url.includes("amazonaws.com")) {
-    // only sign AWS requests (with the signature as part of the query string)
-    return {
-      url: Signer.signUrl(url, {
-        access_key: map.credentials.accessKeyId,
-        secret_key: map.credentials.secretAccessKey,
-        session_token: map.credentials.sessionToken,
-      }),
-    };
-  }
-  // Don't sign
-  return { url: url || "" };
-}
-
 async function readAndShowTracker() {
   
   posInterval.value = setInterval(async () => {
@@ -119,13 +104,13 @@ async function readAndShowTracker() {
     }
 
     // get the position from Amazon Location Service Tracker 
-    let trackerInfo = await getPositions(devicesIds);
+    let trackerInfo = await getPositions(devicesIds);  
     if (trackerInfo) {
       let today = new Date();
       let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
       let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
       let dateTime = date + ' ' + time;
-      console.log(dateTime + " refreshing " + trackerInfo.length + " devices ")
+      logger.info(dateTime + " refreshing " + trackerInfo.length + " devices ")
 
       for (let i = 0; i < trackerInfo.length; i++) {
         if (!popUps[trackerInfo[i].DeviceId]) {
@@ -134,9 +119,9 @@ async function readAndShowTracker() {
         pointOnCircle(trackerInfo[i].Position[0], trackerInfo[i].Position[1], trackerInfo[i].DeviceId, trackerInfo[i].SampleTime)
       }
     } else {
-      console.log("nothing to show!")
+      logger.info("nothing to show!")
     }
-  }, 15000)
+  }, 5000)
 }
 
 function pointOnCircle(lng, lat, deviceId, sampleTime) {
@@ -276,33 +261,25 @@ function getTimeDiffFromNow(sampleTime) {
   var mm = Math.floor(msec / 1000 / 60); // minutes
 
   return { 'hh': hh, 'mm': mm }
-
 }
+
 
 async function batchGetDevicePosition(params) {
-  const locationService = new Location({
-    credentials: await Auth.currentUserCredentials(),
-    region: import.meta.env.VITE_AWS_REGION,
-  });
-  return new Promise(function (resolve, reject) {
-    locationService.batchGetDevicePosition(params, function (
-      err,
-      data
-    ) {
-      if (err) {
-        console.log(err, err.stack);
-        reject([]);
-      } else {
-        resolve(data.DevicePositions)
-      }
-    })
-  })
-}
+  const locationService = await locationClient();
+  const command = new BatchGetDevicePositionCommand(params);
+  const data = await locationService.send(command);
+  if (data && data.DevicePositions) {
+    return data.DevicePositions
+  }
+  else {
+    console.log(data)
+    return []
+  }
+};
 
 async function getPositions(devicesIdsInRoute) {
 
   if (devicesIdsInRoute == 0) return [];
-
   let devicePositionAll = []
   // Breaking into arrays of 10 items as per batchGetDevicePosition limit
   let deviceIdsChunks = chunkArray(devicesIdsInRoute, 10)
@@ -315,20 +292,22 @@ async function getPositions(devicesIdsInRoute) {
 
     let bathPos = await batchGetDevicePosition(params)
 
-    for (let p = 0; p < bathPos.length; p++) {
-      let timeDiff = getTimeDiffFromNow(bathPos[p].SampleTime)
-      if (timeDiff.hh <= 24) {
-        devicePositionAll.push(bathPos[p])
+    if (bathPos) {
+      for (let p = 0; p < bathPos.length; p++) {
+        let timeDiff = getTimeDiffFromNow(bathPos[p].SampleTime)
+        if (timeDiff.hh <= 24) {
+          devicePositionAll.push(bathPos[p])
+        }
       }
     }
-
-  } //for
+  } 
   return devicePositionAll;
-
 }
 
 async function initMap() {
-  console.log("initMap")
+  logger.info("initMap")
+  let url = "https://maps.geo." + import.meta.env.VITE_AWS_REGION + ".amazonaws.com/maps/v0/maps/" + import.meta.env.VITE_GEOMAP + "/style-descriptor";
+  logger.info(url)
   return new Promise(function (resolve) {
     map.center = new maplibregl.LngLat(0, 0);
     map.zoom = 5;
@@ -337,8 +316,8 @@ async function initMap() {
       //Specify the centre of the map when it gets rendered
       center: map.center,
       zoom: map.zoom, //Adjust the zoom level
-      style: import.meta.env.VITE_GEOMAP,
-      transformRequest: transformRequest,
+      style: url, // Defines the appearance of the map
+      ...authHelper.getMapAuthenticationOptions(),
     });
 
     // Change the cursor to a pointer when the mouse is over the states layer.

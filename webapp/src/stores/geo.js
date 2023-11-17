@@ -1,16 +1,27 @@
 import { defineStore } from "pinia";
-import Location from "aws-sdk/clients/location";
-import { API, graphqlOperation } from "aws-amplify";
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { LocationClient, PutGeofenceCommand, CalculateRouteCommand, ListGeofencesCommand } from '@aws-sdk/client-location';
+import { generateClient } from 'aws-amplify/api';
 import * as mutations from "../graphql/mutations";
 import * as queries from "../graphql/queries";
-import { Auth } from "aws-amplify";
 import circle from '@turf/circle'
-
-// import * as subscriptions from "../graphql/subscriptions";
-// import { v4 as uuidv4 } from 'uuid';
-
 import { useUserStore } from "../stores/user";
+import { ConsoleLogger } from 'aws-amplify/utils';
+import { configAmplify } from "../configAmplify";
 
+const logger = new ConsoleLogger('geotrack');
+configAmplify();
+
+const api_client = generateClient()
+
+const locationClient = async () => {
+    const session = await fetchAuthSession();
+    const client = new LocationClient({
+        credentials: session.credentials,
+        region: import.meta.env.VITE_AWS_REGION,
+    });
+    return client;
+};
 
 export const useGeoStore = defineStore("geo", {
     state: () => ({
@@ -49,74 +60,65 @@ export const useGeoStore = defineStore("geo", {
                 let deviceIds = [];
                 console.group("fetchDevicesIdsInRoute");
 
-                const results = await API.graphql({
+                const results = await api_client.graphql({
                     query: queries.deviceIdByTripStatus,
                     variables: { status: "inroute" },
-                    authToken: this.userStore.token
+                    //authToken: this.userStore.token
                 });
+
                 for (let i = 0; i < results.data.statusTrips.trips.length; i++) {
                     deviceIds.push(results.data.statusTrips.trips[i].driver.deviceId)
                 }
-                console.log("Drivers in rounte: " + deviceIds.length);
+                logger.info("Drivers in route: " + deviceIds.length);
                 console.groupEnd();
                 return deviceIds;
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 console.groupEnd();
                 throw error;
             }
         },
 
         async saveGeoFence(name, polygonVertices) {
-            const locationService = new Location({
-                credentials: await Auth.currentUserCredentials(),
-                region: import.meta.env.VITE_AWS_REGION,
-            });
-            return new Promise((resolve, reject) => {
-                let geoFenceId = null;
-                try {
-                    console.group("saveGeoFence");
-                    this.loading = true;
+            let geoFenceId = null;
+            try {
+                console.group("saveGeoFence");
+                this.loading = true;
 
-                    const geoParams = {
-                        CollectionName: import.meta.env.VITE_GEOFENCE,
-                        GeofenceId: name,
-                        Geometry: {
-                            Polygon: [polygonVertices]
-                        }
+                const geoParams = {
+                    CollectionName: import.meta.env.VITE_GEOFENCE,
+                    GeofenceId: name,
+                    Geometry: {
+                        Polygon: [polygonVertices]
                     }
-
-                    locationService.putGeofence(geoParams, function (err, data) {
-                        if (err) {
-                            console.log(err, err.stack);
-                            reject(null);
-                        }
-                        else {
-                            console.log("Saved on Amazon Location Service: " + data.GeofenceId);
-                            geoFenceId = data.GeofenceId
-                            resolve(geoFenceId);
-                        }
-                    })
-
-                    this.loading = false;
-                    console.groupEnd();
-                    return geoFenceId
-
-                } catch (error) {
-                    console.error(error);
-                    this.loading = false;
-                    console.groupEnd();
-                    reject("Rejected");
-                    throw error;
                 }
-            });
+
+                const locationService = await locationClient();
+                const command = new PutGeofenceCommand(geoParams);
+                const data = await locationService.send(command);
+
+                if (data && data.GeofenceId) {
+                    logger.info("Saved on Amazon Location Service: " + data.GeofenceId);
+                    geoFenceId = data.GeofenceId
+                }
+                else {
+                    console.warn(data)
+                }
+
+                this.loading = false;
+                console.groupEnd();
+                return geoFenceId
+
+            } catch (error) {
+                logger.error(error);
+                this.loading = false;
+                console.groupEnd();
+                throw error;
+            }
         },
 
-        async calculateRoute(depLngLat=null, destLngLat=null) {
-            const locationService = new Location({
-                credentials: await Auth.currentUserCredentials(),
-                region: import.meta.env.VITE_AWS_REGION,
-            });
+        async calculateRoute(depLngLat = null, destLngLat = null) {
+
 
             if (depLngLat) {
                 this.depCoord = depLngLat;
@@ -124,39 +126,39 @@ export const useGeoStore = defineStore("geo", {
             if (destLngLat) {
                 this.destCoord = destLngLat;
             }
-            
-            return new Promise((resolve, reject) => {
-                console.group("calculateRoute");
-                var params = {
-                    CalculatorName: import.meta.env.VITE_GEOROUTE_CALCULATION,
-                    DeparturePosition: [
-                        this.depCoord.lng,
-                        this.depCoord.lat,
-                    ],
-                    DestinationPosition: [
-                        this.destCoord.lng,
-                        this.destCoord.lat,
-                    ],
-                    DepartNow: false,
-                    IncludeLegGeometry: true,
-                    TravelMode: 'Car'
-                };
 
-                locationService.calculateRoute(params, function (err, data) {
-                    if (err) {
-                        console.error(err, err.stack);
-                        console.groupEnd();
-                        reject(null);
-                    }
-                    else {                        
-                        this.routeSteps = [...data.Legs[0].Geometry.LineString];
-                        this.routeSummary = data.Summary;
+            console.group("calculateRoute");
+            var params = {
+                CalculatorName: import.meta.env.VITE_GEOROUTE_CALCULATION,
+                DeparturePosition: [
+                    this.depCoord.lng,
+                    this.depCoord.lat,
+                ],
+                DestinationPosition: [
+                    this.destCoord.lng,
+                    this.destCoord.lat,
+                ],
+                DepartNow: false,
+                IncludeLegGeometry: true,
+                TravelMode: 'Car'
+            };
 
-                        console.groupEnd();
-                        resolve({ "summary": data.Summary, "steps": [...data.Legs[0].Geometry.LineString] });
-                    }
-                })
-            });
+            const locationService = await locationClient();
+            const command = new CalculateRouteCommand(params);
+            const data = await locationService.send(command);
+
+            if (data && data.Summary) {
+                this.routeSteps = [...data.Legs[0].Geometry.LineString];
+                this.routeSummary = data.Summary;
+
+                console.groupEnd();
+                return ({ "summary": data.Summary, "steps": [...data.Legs[0].Geometry.LineString] });
+            }
+            else {
+                console.warn(data)
+                return ({ "summary": "", "steps": [] });
+            }
+
         },
 
         calculateGeoFence(center) {
@@ -176,34 +178,29 @@ export const useGeoStore = defineStore("geo", {
                 console.group("fetchGeoFenceItems");
                 this.loading = true;
                 this.geoFenceList = [];
-                const locationService = new Location({
-                    credentials: await Auth.currentUserCredentials(),
-                    region: import.meta.env.VITE_AWS_REGION,
-                });
 
-                locationService.listGeofences({ CollectionName: import.meta.env.VITE_GEOFENCE }, (err, response) => {
-                    if (err) console.log(err, err.stack); // an error occurred
-                    else {
-                        if (response && response.Entries.length > 0) {
-                            for (let i = 0; i < response.Entries.length; i++) {
-                                if (response.Entries[i].Status == "ACTIVE") {
-                                    geoFences.push({
-                                        id: response.Entries[i].GeofenceId,
-                                        geoFenceName: response.Entries[i].GeofenceId,
-                                        boundary: response.Entries[i].Geometry.Polygon
-                                    })
-                                }
-                            }
+                const locationService = await locationClient();
+                const command = new ListGeofencesCommand({ CollectionName: import.meta.env.VITE_GEOFENCE });
+                const data = await locationService.send(command);
+
+                if (data && data.Entries.length > 0) {
+                    for (let i = 0; i < data.Entries.length; i++) {
+                        if (data.Entries[i].Status == "ACTIVE") {
+                            geoFences.push({
+                                id: data.Entries[i].GeofenceId,
+                                geoFenceName: data.Entries[i].GeofenceId,
+                                boundary: data.Entries[i].Geometry.Polygon
+                            })
                         }
                     }
-                });
+                }
 
-                //console.log(usersList);
+                //logger.info(usersList);
                 this.geoFenceList = geoFences;
                 this.loading = false;
                 console.groupEnd();
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
@@ -216,16 +213,16 @@ export const useGeoStore = defineStore("geo", {
                 console.group("listTrips");
                 this.loading = true;
                 this.driversList = [];
-                const tripResults = await API.graphql({
+                const tripResults = await api_client.graphql({
                     query: queries.listTrips,
-                    authToken: this.userStore.token
+                    //authToken: this.userStore.token
                 });
                 tripsList = [...tripResults.data.listTrips.trips]
                 this.loading = false;
                 console.groupEnd();
                 return tripsList;
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
@@ -238,16 +235,16 @@ export const useGeoStore = defineStore("geo", {
                 console.group("listDrivers");
                 this.loading = true;
                 this.driversList = [];
-                const driverResults = await API.graphql({
+                const driverResults = await api_client.graphql({
                     query: queries.listDrivers,
-                    authToken: this.userStore.token
+                    //authToken: this.userStore.token
                 });
                 driversList = [...driverResults.data.listDrivers.drivers]
                 this.loading = false;
                 console.groupEnd();
                 return driversList;
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
@@ -279,10 +276,10 @@ export const useGeoStore = defineStore("geo", {
                 }
 
 
-                result = await API.graphql({
+                result = await api_client.graphql({
                     query: mutations.saveDriver,
                     variables: { input: driverInput },
-                    authToken: this.userStore.token
+                    //authToken: this.userStore.token
                 });
 
                 this.loading = false;
@@ -290,7 +287,7 @@ export const useGeoStore = defineStore("geo", {
                 console.groupEnd();
                 return result;
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
@@ -303,10 +300,10 @@ export const useGeoStore = defineStore("geo", {
                 this.loading = true;
                 let result = "";
                 let route = null;
-                
-                console.log("calculating routing")
+
+                logger.info("calculating routing")
                 route = await this.calculateRoute()
-                
+
                 this.geoFencePolygon = this.calculateGeoFence([this.destCoord.lng, this.destCoord.lat]);
 
                 const geoFenceId = await this.saveGeoFence(
@@ -315,7 +312,7 @@ export const useGeoStore = defineStore("geo", {
                 );
 
                 if (geoFenceId == null) {
-                    console.error("Error saving geoFence")
+                    logger.error("Error saving geoFence")
                     return;
                 }
 
@@ -337,17 +334,17 @@ export const useGeoStore = defineStore("geo", {
                     clientPhone: tripRecord.trip.clientPhone,
                 }
 
-                result = await API.graphql({
+                result = await api_client.graphql({
                     query: mutations.saveTrip,
                     variables: { input: tripInput },
-                    authToken: this.userStore.token
+                    //auth: this.userStore.token
                 });
 
                 this.loading = false;
                 console.groupEnd();
                 return result;
             } catch (error) {
-                console.error(error);
+                logger.error(error);
             }
         },
 
@@ -357,10 +354,10 @@ export const useGeoStore = defineStore("geo", {
                 this.loading = true;
                 let result = "";
 
-                result = await API.graphql({
+                result = await api_client.graphql({
                     query: mutations.delDriver,
                     variables: { id: id },
-                    authToken: this.userStore.token
+                    //authToken: this.userStore.token
                 });
 
                 this.loading = false;
@@ -368,7 +365,7 @@ export const useGeoStore = defineStore("geo", {
                 return result;
 
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
@@ -381,10 +378,10 @@ export const useGeoStore = defineStore("geo", {
                 this.loading = true;
                 let result = "";
 
-                result = await API.graphql({
+                result = await api_client.graphql({
                     query: mutations.delTrip,
                     variables: { id: id },
-                    authToken: this.userStore.token
+                    //authToken: this.userStore.token
                 });
 
                 this.loading = false;
@@ -392,7 +389,7 @@ export const useGeoStore = defineStore("geo", {
                 return result;
 
             } catch (error) {
-                console.error(error);
+                logger.error(error);
                 this.loading = false;
                 console.groupEnd();
                 throw error;
