@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { LocationClient, PutGeofenceCommand, CalculateRouteCommand, ListGeofencesCommand } from '@aws-sdk/client-location';
+import { LocationClient, PutGeofenceCommand, CalculateRouteCommand, ListGeofencesCommand, SearchPlaceIndexForTextCommand, SearchPlaceIndexForPositionCommand } from '@aws-sdk/client-location';
 import { generateClient } from 'aws-amplify/api';
 import * as mutations from "../graphql/mutations";
 import * as queries from "../graphql/queries";
@@ -118,8 +118,6 @@ export const useGeoStore = defineStore("geo", {
         },
 
         async calculateRoute(depLngLat = null, destLngLat = null) {
-
-
             if (depLngLat) {
                 this.depCoord = depLngLat;
             }
@@ -160,6 +158,39 @@ export const useGeoStore = defineStore("geo", {
             }
 
         },
+
+        async searchPlaceIndexForPosition(params) {
+            const locationService = await locationClient();
+            const command = new SearchPlaceIndexForPositionCommand(params);
+            const data = await locationService.send(command);
+          
+            if (data && response.Results.length > 0) {
+                return data.Results[0].Place.Label
+            }
+            else {
+              return []
+            }
+          },
+          
+          async searchPlaceIndexForText(params) {
+            const locationService = await locationClient();
+            const command = new SearchPlaceIndexForTextCommand(params);
+            const data = await locationService.send(command);
+          
+            if (data && data.Results.length > 0) {
+              let placeOptions = []
+              for (var i = 0; i < data.Results.length; i++) {
+                placeOptions.push({
+                  title: data.Results[i].Place.Label,
+                  value: data.Results[i].Place.Geometry.Point,
+                });    
+              }
+              return placeOptions
+            }
+            else {
+              return []
+            }
+          },
 
         calculateGeoFence(center) {
             var options = {

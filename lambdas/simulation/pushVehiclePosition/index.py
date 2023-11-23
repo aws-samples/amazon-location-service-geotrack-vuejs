@@ -78,6 +78,7 @@ def handler(event, context):
     route = route_calculation(event['geoStart'],event['geoEnd'])
     if 'Legs' in route:
         for step in route['Legs'][0]['Steps']:
+            publish_location(event['id'], event['driver']['deviceId'], step['StartPosition'])
             if step['DurationSeconds'] >= 200:
                 div=10
             elif step['DurationSeconds'] < 200 and step['DurationSeconds'] >= 100:
@@ -86,10 +87,7 @@ def handler(event, context):
                 div=4
             
             logger.info("Sleeping: " + str(round(step['DurationSeconds']/div)) + " sec")
-            sleep(round(step['DurationSeconds']/div))
-            publish_location(event['id'], event['driver']['deviceId'], step['StartPosition'])
-            logger.info("Sleeping: " + str(round(step['DurationSeconds']/div)) + " sec")
-            sleep(round(step['DurationSeconds']/div))
+            sleep(round(step['DurationSeconds']/div))            
             publish_location(event['id'], event['driver']['deviceId'], step['EndPosition'])
     
 

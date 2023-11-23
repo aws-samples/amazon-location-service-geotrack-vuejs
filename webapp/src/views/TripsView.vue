@@ -4,7 +4,7 @@ import { onBeforeMount } from "vue";
 import { fetchAuthSession } from 'aws-amplify/auth';
 import Map from "../components/Map.vue";
 import Header from "../components/Header.vue";
-import { LocationClient, SearchPlaceIndexForTextCommand } from '@aws-sdk/client-location';
+import { LocationClient } from '@aws-sdk/client-location';
 import { useGeoStore } from "../stores/geo";
 
 const geoStore = useGeoStore();
@@ -143,38 +143,6 @@ watch(destSearch, async (newValue) => {
   await searchCoords(newValue, "destination");
 });
 
-async function searchPlaceIndexForPosition(params) {
-  const locationService = await locationClient();
-  const command = new SearchPlaceIndexForPositionCommand(params);
-  const data = await locationService.send(command);
-
-  if (data && response.Results.length > 0) {
-      return data.Results[0].Place.Label
-  }
-  else {
-    return []
-  }
-};
-
-async function searchPlaceIndexForText(params) {
-  const locationService = await locationClient();
-  const command = new SearchPlaceIndexForTextCommand(params);
-  const data = await locationService.send(command);
-
-  if (data && data.Results.length > 0) {
-    let placeOptions = []
-    for (var i = 0; i < data.Results.length; i++) {
-      placeOptions.push({
-        title: data.Results[i].Place.Label,
-        value: data.Results[i].Place.Geometry.Point,
-      });    
-    }
-    return placeOptions
-  }
-  else {
-    return []
-  }
-};
 
 async function searchCoords(val, category) {
   let placeOptions = []
@@ -186,11 +154,10 @@ async function searchCoords(val, category) {
       Position: [val.lng, val.lat],
     }
 
-    placeOptions = await searchPlaceIndexForPosition(pos_params)
+    placeOptions = await geoStore.searchPlaceIndexForPosition(pos_params)
   }
   else if (!val || val.length < 3) return false
   else {
-
     let longitude = -123.11335999999994;
     let latitude = 49.260380000000055;
     let params = {
@@ -200,7 +167,7 @@ async function searchCoords(val, category) {
       BiasPosition: [longitude, latitude],
     }
 
-    placeOptions = await searchPlaceIndexForText(params)
+    placeOptions = await geoStore.searchPlaceIndexForText(params)
 
     if (category == "departure") {
       items.departure = [...placeOptions]

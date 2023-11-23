@@ -1,6 +1,13 @@
 <template>
-  <div>
-    <div id="markmap" style="width: 100%;height: 40vw"></div>
+  <div id="markmap" style="width: 100%;height: 40vw"></div>
+  <div class="map-overlay top" v-show="showSearch">
+    <div class="map-overlay-inner">
+      <fieldset>
+        <input id="map-search-input" list="map-search-results" placeholder="Search" style="width: 250px;">
+        <datalist id="map-search-results">
+        </datalist>
+      </fieldset>
+    </div>
   </div>
 </template>
 
@@ -19,6 +26,7 @@ const logger = new ConsoleLogger('geotrack');
 const authHelper = await withIdentityPoolId(import.meta.env.VITE_IDENTITY_POOL_ID); // use Cognito pool id for credentials
 const geoStore = useGeoStore();
 const { depCoord, destCoord, routeSteps } = storeToRefs(geoStore)
+const showSearch = ref(false);
 
 const locationClient = async () => {
   const session = await fetchAuthSession();
@@ -54,8 +62,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (posInterval && posInterval.value > 0) { 
-    clearInterval(posInterval.value) 
+  if (posInterval && posInterval.value > 0) {
+    clearInterval(posInterval.value)
   }
 });
 
@@ -93,7 +101,7 @@ watch(routeSteps, (newSteps) => {
 });
 
 async function readAndShowTracker() {
-  
+
   posInterval.value = setInterval(async () => {
     // Getting deviceIds from trips that contains status == inroute
     let devicesIds = []
@@ -104,7 +112,7 @@ async function readAndShowTracker() {
     }
 
     // get the position from Amazon Location Service Tracker 
-    let trackerInfo = await getPositions(devicesIds);  
+    let trackerInfo = await getPositions(devicesIds);
     if (trackerInfo) {
       let today = new Date();
       let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
@@ -136,7 +144,7 @@ function pointOnCircle(lng, lat, deviceId, sampleTime) {
     data: {
       type: "Point",
       coordinates: [lng, lat]
-    } 
+    }
   });
 
   // Add red if timeDiff is X
@@ -153,11 +161,11 @@ function pointOnCircle(lng, lat, deviceId, sampleTime) {
   });
 
   map.map.on('click', deviceId, function () {
-      popUps[name]
-        .setLngLat([lng, lat])
-        .setHTML(deviceId + " - " + sampleTime)
-        .addTo(map.map)
-    });
+    popUps[name]
+      .setLngLat([lng, lat])
+      .setHTML(deviceId + " - " + sampleTime)
+      .addTo(map.map)
+  });
 }
 
 function mapFit() {
@@ -300,7 +308,7 @@ async function getPositions(devicesIdsInRoute) {
         }
       }
     }
-  } 
+  }
   return devicePositionAll;
 }
 
@@ -332,7 +340,7 @@ async function initMap() {
 
     map.map.on('load', async function () {
       if (props.action && props.action === "show_route") {
-        let route = await geoStore.calculateRoute(props.routeParams.geoStart,props.routeParams.geoEnd)  
+        let route = await geoStore.calculateRoute(props.routeParams.geoStart, props.routeParams.geoEnd)
         const markerDep = new maplibregl.Marker().setLngLat(props.routeParams.geoStart).addTo(map.map);
         const markerDest = new maplibregl.Marker({ color: "#a34a07" }).setLngLat(props.routeParams.geoEnd).addTo(map.map);
         mapFit()
@@ -340,10 +348,42 @@ async function initMap() {
       }
 
       if (props.action && props.action === "display_routes") {
+        showSearch.value = true
+        document.getElementById("map-search-input").addEventListener("keypress", async function (e) {
+          if (e.key === 'Enter') {
+            var input = document.getElementById("map-search-input");
+            var option = Array.prototype.find.call(input.list.options, function(option) {
+                return option.value === e.target.value;
+            });
+            map.map.flyTo({
+              center: [option.getAttribute("data-lng"),option.getAttribute("data-lat")],
+              essential: true,
+              zoom: 12,
+            });
+          }
+
+          else {
+            let longitude = -123.11335999999994;
+            let latitude = 49.260380000000055;
+            let params = {
+              IndexName: import.meta.env.VITE_GEOPLACE_INDEX,
+              Text: e.target.value + e.key,
+              MaxResults: 8,
+              BiasPosition: [longitude, latitude],
+            }
+            let results = await geoStore.searchPlaceIndexForText(params);
+            let options = ''
+
+            results.forEach(function (item) {
+              options += '<option data-lng="' + item.value[0] + '" data-lat="' + item.value[1] + '" value="' + item.title + '"></option>';
+              document.getElementById('map-search-results').innerHTML = options;
+            });
+          }
+        })
         await readAndShowTracker()
       }
 
-});
+    });
 
     //Zoom in and out button
     map.map.addControl(new maplibregl.NavigationControl(), "top-left");
@@ -359,6 +399,64 @@ async function initMap() {
     resolve();
   });
 }
-
-
 </script>
+
+<style>
+.map-overlay {
+  font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  position: absolute;
+  width: 400px;
+  top: 30px;
+  left: 0;
+  padding: 50px;
+}
+
+.map-overlay .map-overlay-inner {
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.map-overlay-inner fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.map-overlay-inner fieldset:last-child {
+  margin: 0;
+}
+
+.map-overlay-inner select {
+  width: 100%;
+}
+
+.map-overlay-inner label {
+  display: block;
+  font-weight: bold;
+  margin: 0 0 5px;
+}
+
+.map-overlay-inner button {
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  border: none;
+  cursor: pointer;
+}
+
+.map-overlay-inner button:focus {
+  outline: none;
+}
+
+.map-overlay-inner button:hover {
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+
+.map-select {
+  border: 1px solid;
+}
+</style>
