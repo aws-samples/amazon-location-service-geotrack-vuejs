@@ -11,7 +11,7 @@
     "@aws-amplify/ui-vue": "^4.0.0",
     "@aws-sdk/client-location": "^3.451.0",
     "@aws-sdk/signature-v4": "^3.374.0",
-    "@aws/amazon-location-utilities-auth-helper": "^1.0.3",
+    "@aws/amazon-location-utilities-auth-helper": "^1.0.7",
     "@turf/circle": "^6.5.0",
     "aws-amplify": "^6.0.2",
     "axios": "^1.6.2",
