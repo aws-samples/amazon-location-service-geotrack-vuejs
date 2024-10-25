@@ -14,7 +14,7 @@
     "@aws/amazon-location-utilities-auth-helper": "^1.0.3",
     "@turf/circle": "^6.5.0",
     "aws-amplify": "^6.0.2",
-    "axios": "^1.6.2",
+    "axios": "^1.7.4",
     "maplibre-gl": "^3.6.1",
     "material-design-icons": "^3.0.1",
     "pinia": "^2.1.7",
