@@ -7,7 +7,7 @@ Globals:
     AutoPublishAlias: live
     Handler: index.handler
     MemorySize: 256
-    Runtime: python3.10
+    Runtime: python3.13
     Timeout: 120
     Tracing: Active    
   
@@ -434,10 +434,10 @@ Resources:
       Description: requests
       ContentUri: ./layers/requests
       CompatibleRuntimes:
-        - python3.10
+        - python3.13
       RetentionPolicy: Delete
     Metadata:
-      BuildMethod: python3.10
+      BuildMethod: python3.13
 
   LaunchDeliveryFleet:
     Type: AWS::Serverless::Function 
@@ -586,16 +586,13 @@ Resources:
                 Unit: "MILLISECONDS"
               TrackerName: !Ref Tracker
 
-  PinpointProject:
-    Type: AWS::Pinpoint::App
-    Properties: 
-      Name: !Sub "${ProjectName}-${EnvironmentName}-PinPoint"
-
-  PinpointSMSChannel:
-    Type: AWS::Pinpoint::SMSChannel
-    Properties: 
-      ApplicationId: !Ref PinpointProject
-      Enabled: true
+  # Migrated from Pinpoint to SNS for SMS messaging
+  # SNS Topic for sending transactional SMS messages
+  SMSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub "${ProjectName}-${EnvironmentName}-SMS"
+      TopicName: !Sub "${ProjectName}-${EnvironmentName}-SMS-Topic"
 
   EventBus: 
     Type: AWS::Events::EventBus
@@ -611,8 +608,13 @@ Resources:
         - !Ref CoreLayer
       Policies:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-        - PinpointEndpointAccessPolicy:
-            PinpointApplicationId: !Ref PinpointProject
+        # Migrated from PinpointEndpointAccessPolicy to SNS:Publish permissions
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "sns:Publish"
+              Resource: !Ref SMSTopic
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${ProjectName}/*"
         - Version: '2012-10-17' # Policy Document
@@ -626,7 +628,8 @@ Resources:
               Resource: '*'  
       Environment:
         Variables:
-          APPLICATION_ID: !Ref PinpointProject
+          # Migrated from Pinpoint APPLICATION_ID to SNS Topic ARN
+          SNS_TOPIC_ARN: !Ref SMSTopic
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
           APPSYNC_URL: !GetAtt GraphQLAPI.GraphQLUrl

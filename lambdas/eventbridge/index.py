@@ -10,13 +10,15 @@ from requests_aws4auth import AWS4Auth
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-pinpoint = boto3.client('pinpoint')
+# Migrated from Pinpoint to SNS for SMS messaging
+sns = boto3.client('sns')
 appsync = boto3.client('appsync')
 
 appsync_url = os.getenv('APPSYNC_URL')
 project_name = os.getenv('PROJECT_NAME')
 project_env = os.getenv('PROJECT_ENV')
-pinpoint_application_id = os.getenv('APPLICATION_ID')
+# Migrated from Pinpoint APPLICATION_ID to SNS Topic ARN
+sns_topic_arn = os.getenv('SNS_TOPIC_ARN')
 
 boto3_session = boto3.Session()
 credentials = boto3_session.get_credentials()
@@ -81,27 +83,37 @@ def handler(event, context):
         deviceId = row['deliveryAgent']['device']['id']
 
         if event['detail']['DeviceId'] == deviceId:
-            response = pinpoint.send_messages(
-                ApplicationId=pinpoint_application_id,
-                MessageRequest={
-                    'Addresses': {
-                        'string': {
-                            'ChannelType': 'SMS',
-                            'RawContent': 'string'
+            # Migrated from Pinpoint to SNS for SMS messaging
+            # SNS uses a simpler publish API compared to Pinpoint's send_messages
+            # Note: Phone number should be retrieved from the delivery info record
+            phone_number = row.get('userPhone', '')
+            
+            if phone_number:
+                try:
+                    response = sns.publish(
+                        PhoneNumber=phone_number,
+                        Message='The driver should be arriving soon',
+                        MessageAttributes={
+                            'AWS.SNS.SMS.SMSType': {
+                                'DataType': 'String',
+                                'StringValue': 'Transactional'
+                            }
                         }
-                    },
-                    'MessageConfiguration': {            
-                        'SMSMessage': {
-                            'Body': 'The driver should be arriving soon',
-                            'Keyword': 'GeoTrack',
-                            'MessageType': 'TRANSACTIONAL'
-                        },
-                    },
-                    'TraceId': 'string'
+                    )
+                    logger.info(f"SMS sent successfully via SNS: {response}")
+                    print(response)
+                except Exception as e:
+                    logger.error(f"Failed to send SMS via SNS: {str(e)}")
+                    return {
+                        'statusCode': 500,
+                        'body': json.dumps(f'Error sending SMS: {str(e)}')
+                    }
+            else:
+                logger.warning("No phone number available for SMS notification")
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps('No phone number available')
                 }
-            )
-
-        print(response)
 
         return {
             'statusCode': 200,

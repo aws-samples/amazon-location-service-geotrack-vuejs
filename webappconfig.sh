@@ -30,7 +30,7 @@ echo -e "${WHITE}Stack name: ${YELLOW}$STACKNAME${SET}"
 echo -e "${WHITE}AWS Region: ${YELLOW}$AWSREGION${SET}"
 
 function get_output() {
-    local RSP=$(aws cloudformation describe-stacks --stack-name $STACKNAME --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text --region $AWSREGION)
+    local RSP=$(aws cloudformation describe-stacks --stack-name $STACKNAME --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text)
     eval "echo $1: $RSP"
     eval "$1=$RSP"
 }
