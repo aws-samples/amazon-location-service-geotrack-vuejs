@@ -459,6 +459,8 @@ Resources:
             ParameterName: !Sub "${ProjectName}/*"
         - LambdaInvokePolicy:
             FunctionName: !Ref PushVehiclePosition
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TripsTable
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -474,6 +476,7 @@ Resources:
           PROJECT_NAME: !Ref ProjectName
           PROJECT_ENV: !Ref EnvironmentName
           APPSYNC_URL: !GetAtt GraphQLAPI.GraphQLUrl
+          TRIPS_TABLE_NAME: !Ref TripsTable
 
   PushVehiclePosition:
     Type: AWS::Serverless::Function 

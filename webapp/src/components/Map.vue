@@ -147,9 +147,6 @@ function pointOnCircle(lng, lat, deviceId, sampleTime) {
     }
   });
 
-  // Add red if timeDiff is X
-  //if (mm >= 10) color = '#ff0000'
-
   map.map.addLayer({
     'id': name,
     'source': name,
@@ -159,6 +156,37 @@ function pointOnCircle(lng, lat, deviceId, sampleTime) {
       'circle-color': color
     }
   });
+
+  // Animate to new position
+  const source = map.map.getSource(name);
+  if (source) {
+    const newCoords = [lng, lat];
+    const oldCoords = source._data.coordinates;
+    
+    if (oldCoords && (oldCoords[0] !== newCoords[0] || oldCoords[1] !== newCoords[1])) {
+      let start = null;
+      const duration = 4000; // 4 seconds animation
+      
+      function animate(timestamp) {
+        if (!start) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+        
+        const currentLng = oldCoords[0] + (newCoords[0] - oldCoords[0]) * progress;
+        const currentLat = oldCoords[1] + (newCoords[1] - oldCoords[1]) * progress;
+        
+        source.setData({
+          type: "Point",
+          coordinates: [currentLng, currentLat]
+        });
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      }
+      
+      requestAnimationFrame(animate);
+    }
+  }
 
   map.map.on('click', deviceId, function () {
     popUps[name]
@@ -355,11 +383,13 @@ async function initMap() {
             var option = Array.prototype.find.call(input.list.options, function(option) {
                 return option.value === e.target.value;
             });
-            map.map.flyTo({
-              center: [option.getAttribute("data-lng"),option.getAttribute("data-lat")],
-              essential: true,
-              zoom: 12,
-            });
+            if (option) {
+              map.map.flyTo({
+                center: [option.getAttribute("data-lng"),option.getAttribute("data-lat")],
+                essential: true,
+                zoom: 12,
+              });
+            }
           }
 
           else {

@@ -66,10 +66,14 @@ export const useGeoStore = defineStore("geo", {
                     //authToken: this.userStore.token
                 });
 
+                console.log("Query results:", results);
+                console.log("Trips found:", results.data.statusTrips.trips.length);
+
                 for (let i = 0; i < results.data.statusTrips.trips.length; i++) {
                     deviceIds.push(results.data.statusTrips.trips[i].driver.deviceId)
                 }
                 logger.info("Drivers in route: " + deviceIds.length);
+                console.log("Device IDs:", deviceIds);
                 console.groupEnd();
                 return deviceIds;
             } catch (error) {

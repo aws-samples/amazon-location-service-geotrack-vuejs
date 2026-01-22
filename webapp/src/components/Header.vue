@@ -8,21 +8,13 @@ Amazon Web Services, Inc. or Amazon Web Services EMEA SARL or both.
 -->
 
 <script setup>
-import { reactive, ref } from "vue";
+import { ref } from "vue";
 import { useUserStore } from "../stores/user";
-import { getCurrentUser, signOut, fetchAuthSession } from 'aws-amplify/auth';
-import axios from "axios"
+import { signOut } from 'aws-amplify/auth';
+import SimulationPanel from "./SimulationPanel.vue";
+
 const userStore = useUserStore();
-
-const buttonSimulate = ref(false)
-
-const alert = reactive({
-  title: null,
-  type: "warning",
-  text: null,
-  active: false,
-  icon: null
-});
+const showSimulation = ref(false);
 
 async function userSignOut() {
   try {
@@ -30,37 +22,6 @@ async function userSignOut() {
     $router.push("/auth");
   } catch (error) {
     console.log("error signing out: ", error);
-  }
-}
-
-async function simulate() {
-  try {
-    buttonSimulate.value = false
-    const session = await fetchAuthSession();
-    const jwt = session.tokens.idToken
-    const options = {
-      headers: { 'Authorization': jwt }
-    };
-    await axios.post(import.meta.env.VITE_API_URL + "/launch", {}, options)
-      .then(results => {
-        if (results.status == 200) {
-          alert.active = true;
-          alert.title = "Simulate";
-          alert.text = results.data.msg;
-        } else {
-          alert.active = true;
-          alert.type = "error";
-          alert.title = "Simulate";
-          alert.text = results.data.msg;
-        }
-      });
-  }
-  catch (error) {
-    console.error(error);
-    alert.active = true;
-    alert.type = "error";
-    alert.title = "Simulate";
-    alert.text = error.message;
   }
 }
 </script>
@@ -101,7 +62,7 @@ async function simulate() {
 
         <v-tooltip text="Simulate" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" color="orange" icon @click="buttonSimulate = true">
+            <v-btn v-bind="props" color="orange" icon @click="showSimulation = true">
               <v-icon>mdi-car-multiple</v-icon>
             </v-btn>
           </template>
@@ -133,21 +94,7 @@ async function simulate() {
     </v-toolbar>
   </v-card>
 
-  <v-dialog v-model="buttonSimulate" width="500">
-    <v-card title="Confirm Simulation">
-      <v-card-text>
-        Are you sure you want to run the simulation?
-      </v-card-text>
-
-      <v-card-actions>
-        <v-spacer></v-spacer>
-
-        <v-btn text="Yes" @click="simulate()"></v-btn>
-
-        <v-btn text="No" color="warning" @click="buttonSimulate = false"></v-btn>
-      </v-card-actions>
-    </v-card>
+  <v-dialog v-model="showSimulation" max-width="700">
+    <SimulationPanel @close="showSimulation = false" />
   </v-dialog>
-  <v-alert density="compact" v-model="alert.active" :type="alert.type" :title="alert.title" :text="alert.text" closable
-    close-label="Close Alert"></v-alert>
 </template>
