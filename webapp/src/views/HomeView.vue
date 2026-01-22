@@ -1,18 +1,17 @@
 <script setup>
 import Map from "../components/Map.vue";
 import Header from "../components/Header.vue";
-// import { ref } from "vue";
-// import { Auth } from "aws-amplify";
-// import { useBotStore } from "../stores/bot";
-// const store = useBotStore();
-
+import Dashboard from "../components/Dashboard.vue";
 </script>
 
 <template>
   <v-app>
     <Suspense>
       <Header />
-    </Suspense>   
+    </Suspense>
+    <Suspense>
+      <Dashboard />
+    </Suspense>
     <Suspense>
       <Map action="display_routes" />
     </Suspense> 

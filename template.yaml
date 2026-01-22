@@ -243,6 +243,12 @@ Resources:
             TableName: !Ref TripsTable
             TableArn: !GetAtt TripsTable.Arn
       Functions:
+        publishDevicePositionFunc:
+          Runtime:
+            Name: APPSYNC_JS
+            Version: "1.0.0"
+          DataSource: NONE
+          CodeUri: ./webapp/src/resolvers/publishDevicePosition.js
         listDrivers:
           Runtime:
             Name: APPSYNC_JS
@@ -317,6 +323,12 @@ Resources:
           CodeUri: ./webapp/src/resolvers/delById.js
       Resolvers:
         Mutation:
+          publishDevicePosition:
+            Runtime:
+              Name: APPSYNC_JS
+              Version: "1.0.0"
+            Pipeline:
+              - publishDevicePositionFunc
           saveDriver:
             Runtime:
               Name: APPSYNC_JS
@@ -588,6 +600,8 @@ Resources:
                 Value: "${timestamp()}"
                 Unit: "MILLISECONDS"
               TrackerName: !Ref Tracker
+          - Lambda:
+              FunctionArn: !GetAtt PublishPositionToAppSync.Arn
 
   # Migrated from Pinpoint to SNS for SMS messaging
   # SNS Topic for sending transactional SMS messages
@@ -601,6 +615,35 @@ Resources:
     Type: AWS::Events::EventBus
     Properties: 
       Name: !Sub "${ProjectName}-${EnvironmentName}-EventBus"
+
+  PublishPositionToAppSync:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-${EnvironmentName}-PublishPosition"
+      CodeUri: ./lambdas/iot/
+      Handler: publishPosition.handler
+      Runtime: python3.13
+      Layers:
+        - !Ref CoreLayer
+      Policies:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "appsync:GraphQL"
+              Resource: !Sub "${GraphQLAPI.Arn}/*"
+      Environment:
+        Variables:
+          APPSYNC_URL: !GetAtt GraphQLAPI.GraphQLUrl
+
+  PublishPositionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PublishPositionToAppSync
+      Action: lambda:InvokeFunction
+      Principal: iot.amazonaws.com
+      SourceArn: !GetAtt IoTTopicRule.Arn
 
   EventBridgeResponse:
     Type: AWS::Serverless::Function 

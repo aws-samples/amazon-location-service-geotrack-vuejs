@@ -94,11 +94,20 @@ enum TripStatus {
 	onhold
 }
 
+type DevicePosition @aws_iam @aws_cognito_user_pools {
+	deviceId: ID!
+	position: Coordinate!
+	timestamp: AWSDateTime!
+	tripId: ID
+}
+
 type Mutation {
 	saveDriver(input: DriverInput): Driver
 	delDriver(id: ID!): Driver
 	saveTrip(input: TripInput): Trip
 	delTrip(id: ID!): Trip
+	publishDevicePosition(deviceId: ID!, position: CoordinateInput!, timestamp: AWSDateTime!, tripId: ID): DevicePosition
+		@aws_iam
 }
 
 type Query {
@@ -116,4 +125,12 @@ type Query {
 schema {
 	query: Query
 	mutation: Mutation
+	subscription: Subscription
+}
+
+type Subscription {
+	onDevicePositionUpdate(deviceId: ID): DevicePosition
+		@aws_subscribe(mutations: ["publishDevicePosition"])
+		@aws_iam
+		@aws_cognito_user_pools
 }

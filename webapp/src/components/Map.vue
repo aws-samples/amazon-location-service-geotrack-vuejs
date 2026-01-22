@@ -21,6 +21,10 @@ import { LocationClient, BatchGetDevicePositionCommand } from '@aws-sdk/client-l
 import { useGeoStore } from "../stores/geo";
 import { ConsoleLogger } from 'aws-amplify/utils';
 import { withIdentityPoolId } from '@aws/amazon-location-utilities-auth-helper';
+import { generateClient } from 'aws-amplify/api';
+import * as subscriptions from '../graphql/subscriptions';
+
+const api_client = generateClient();
 
 const logger = new ConsoleLogger('geotrack');
 const authHelper = await withIdentityPoolId(import.meta.env.VITE_IDENTITY_POOL_ID); // use Cognito pool id for credentials
@@ -55,7 +59,8 @@ const map = reactive({
 
 const showSummary = ref(false);
 const posInterval = ref(null);
-const popUps = ref({})
+const popUps = ref({});
+const subscriptionHandlers = ref([]);
 
 onMounted(async () => {
   await initMap();
@@ -65,6 +70,8 @@ onUnmounted(() => {
   if (posInterval && posInterval.value > 0) {
     clearInterval(posInterval.value)
   }
+  // Unsubscribe from all subscriptions
+  subscriptionHandlers.value.forEach(sub => sub.unsubscribe());
 });
 
 function flyToMap(position, color = null) {
@@ -100,8 +107,45 @@ watch(routeSteps, (newSteps) => {
   showRoute(newSteps)
 });
 
-async function readAndShowTracker() {
+async function subscribeToDeviceUpdates() {
+  try {
+    // Get devices that are in route
+    let devicesIds = await geoStore.fetchDevicesIdsInRoute();
+    logger.info(`Subscribing to ${devicesIds.length} devices`);
+    
+    // Subscribe to each device
+    devicesIds.forEach(deviceId => {
+      const subscription = api_client.graphql({
+        query: subscriptions.onDevicePositionUpdate,
+        variables: { deviceId }
+      }).subscribe({
+        next: ({ data }) => {
+          const update = data.onDevicePositionUpdate;
+          logger.info(`Position update for ${update.deviceId}:`, update.position);
+          
+          if (!popUps.value[update.deviceId]) {
+            popUps.value[update.deviceId] = new maplibregl.Popup();
+          }
+          
+          pointOnCircle(
+            update.position.lng,
+            update.position.lat,
+            update.deviceId,
+            update.timestamp
+          );
+        },
+        error: (error) => logger.error('Subscription error:', error)
+      });
+      
+      subscriptionHandlers.value.push(subscription);
+    });
+    
+  } catch (error) {
+    logger.error('Error setting up subscriptions:', error);
+  }
+}
 
+async function readAndShowTracker() {
   posInterval.value = setInterval(async () => {
     // Getting deviceIds from trips that contains status == inroute
     let devicesIds = []
@@ -121,8 +165,8 @@ async function readAndShowTracker() {
       logger.info(dateTime + " refreshing " + trackerInfo.length + " devices ")
 
       for (let i = 0; i < trackerInfo.length; i++) {
-        if (!popUps[trackerInfo[i].DeviceId]) {
-          popUps[trackerInfo[i].DeviceId] = new maplibregl.Popup()
+        if (!popUps.value[trackerInfo[i].DeviceId]) {
+          popUps.value[trackerInfo[i].DeviceId] = new maplibregl.Popup()
         }
         pointOnCircle(trackerInfo[i].Position[0], trackerInfo[i].Position[1], trackerInfo[i].DeviceId, trackerInfo[i].SampleTime)
       }
@@ -410,7 +454,8 @@ async function initMap() {
             });
           }
         })
-        await readAndShowTracker()
+        // Set up real-time subscriptions
+        await subscribeToDeviceUpdates()
       }
 
     });
