@@ -500,6 +500,8 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - SSMParameterReadPolicy:
             ParameterName: !Sub "${ProjectName}/*"
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TripsTable
         - Version: '2012-10-17' # Policy Document
           Statement:
             - Effect: Allow
@@ -522,6 +524,7 @@ Resources:
           PROJECT_ENV: !Ref EnvironmentName
           ROUTE_NAME: !Ref RouteCalculation
           TRACKER_NAME: !Ref Tracker
+          TRIPS_TABLE_NAME: !Ref TripsTable
 
   # IoTUpdateTracker:
   #   Type: AWS::Serverless::Function 

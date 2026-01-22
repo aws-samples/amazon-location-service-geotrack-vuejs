@@ -111,17 +111,20 @@ async function subscribeToDeviceUpdates() {
   try {
     // Get devices that are in route
     let devicesIds = await geoStore.fetchDevicesIdsInRoute();
-    logger.info(`Subscribing to ${devicesIds.length} devices`);
+    logger.info(`Subscribing to ${devicesIds.length} devices: ${devicesIds.join(', ')}`);
     
     // Subscribe to each device
     devicesIds.forEach(deviceId => {
+      logger.info(`Setting up subscription for device: ${deviceId}`);
+      
       const subscription = api_client.graphql({
         query: subscriptions.onDevicePositionUpdate,
         variables: { deviceId }
       }).subscribe({
         next: ({ data }) => {
           const update = data.onDevicePositionUpdate;
-          logger.info(`Position update for ${update.deviceId}:`, update.position);
+          console.log(`🔥 SUBSCRIPTION RECEIVED - Device: ${update.deviceId}, Position: [${update.position.lng}, ${update.position.lat}], Time: ${update.timestamp}`);
+          logger.info(`🔥 SUBSCRIPTION UPDATE for ${update.deviceId}:`, update.position);
           
           if (!popUps.value[update.deviceId]) {
             popUps.value[update.deviceId] = new maplibregl.Popup();
@@ -134,11 +137,16 @@ async function subscribeToDeviceUpdates() {
             update.timestamp
           );
         },
-        error: (error) => logger.error('Subscription error:', error)
+        error: (error) => {
+          logger.error(`Subscription error for ${deviceId}:`, error);
+        }
       });
       
       subscriptionHandlers.value.push(subscription);
+      logger.info(`Subscription active for device: ${deviceId}`);
     });
+    
+    logger.info(`Total active subscriptions: ${subscriptionHandlers.value.length}`);
     
   } catch (error) {
     logger.error('Error setting up subscriptions:', error);

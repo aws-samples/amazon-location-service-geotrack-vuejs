@@ -19,9 +19,11 @@ project_name = os.getenv('PROJECT_NAME')
 project_env = os.getenv('PROJECT_ENV')
 ROUTE_NAME = os.getenv('ROUTE_NAME')
 TRACKER_NAME = os.getenv('TRACKER_NAME')
+TRIPS_TABLE = os.getenv('TRIPS_TABLE_NAME')
 
 location = boto3.client('location')
 iot = boto3.client('iot-data')
+dynamodb = boto3.resource('dynamodb')
 
 def route_calculation(departure, destination):
     return location.calculate_route(
@@ -90,6 +92,21 @@ def handler(event, context):
             sleep(round(step['DurationSeconds']/div))            
             publish_location(event['id'], event['driver']['deviceId'], step['EndPosition'])
     
+    # Update trip status to completed
+    try:
+        trips_table = dynamodb.Table(TRIPS_TABLE)
+        trips_table.update_item(
+            Key={'id': event['id']},
+            UpdateExpression='SET #status = :status, updatedAt = :updatedAt',
+            ExpressionAttributeNames={'#status': 'status'},
+            ExpressionAttributeValues={
+                ':status': 'completed',
+                ':updatedAt': datetime.utcnow().isoformat()
+            }
+        )
+        logger.info(f"Trip {event['id']} marked as completed")
+    except Exception as e:
+        logger.error(f"Error updating trip status: {e}")
 
     response = {
         'statusCode': 200,
