@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.7",
-    "@aws-sdk/client-location": "^3.972.0",
+    "@aws-sdk/client-location": "^3.987.0",
     "@aws/amazon-location-utilities-auth-helper": "^1.0.3",
     "@turf/circle": "^6.5.0",
     "aws-amplify": "^6.15.10",
