@@ -7,7 +7,7 @@ Globals:
     AutoPublishAlias: live
     Handler: index.handler
     MemorySize: 256
-    Runtime: python3.13
+    Runtime: python3.14
     Timeout: 120
     Tracing: Active    
   
@@ -446,10 +446,10 @@ Resources:
       Description: requests
       ContentUri: ./layers/requests
       CompatibleRuntimes:
-        - python3.13
+        - python3.14
       RetentionPolicy: Delete
     Metadata:
-      BuildMethod: python3.13
+      BuildMethod: python3.14
 
   LaunchDeliveryFleet:
     Type: AWS::Serverless::Function 
@@ -625,7 +625,7 @@ Resources:
       FunctionName: !Sub "${ProjectName}-${EnvironmentName}-PublishPosition"
       CodeUri: ./lambdas/iot/
       Handler: publishPosition.handler
-      Runtime: python3.13
+      Runtime: python3.14
       Layers:
         - !Ref CoreLayer
       Policies:

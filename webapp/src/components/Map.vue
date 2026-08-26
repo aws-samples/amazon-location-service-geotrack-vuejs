@@ -16,7 +16,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { onMounted, onUnmounted } from "vue";
 import { storeToRefs } from 'pinia'
 import { fetchAuthSession } from 'aws-amplify/auth';
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import { LocationClient, BatchGetDevicePositionCommand } from '@aws-sdk/client-location';
 import { useGeoStore } from "../stores/geo";
 import { ConsoleLogger } from 'aws-amplify/utils';
