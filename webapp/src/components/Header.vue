@@ -9,17 +9,19 @@ Amazon Web Services, Inc. or Amazon Web Services EMEA SARL or both.
 
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { signOut } from 'aws-amplify/auth';
 import SimulationPanel from "./SimulationPanel.vue";
 
+const router = useRouter();
 const userStore = useUserStore();
 const showSimulation = ref(false);
 
 async function userSignOut() {
   try {
     await signOut();
-    $router.push("/auth");
+    router.push("/auth");
   } catch (error) {
     console.log("error signing out: ", error);
   }

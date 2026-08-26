@@ -11,18 +11,24 @@ LIGHTPURPLE='\033[1;35m'
 CYAN='\033[0;36m'    
 WHITE='\033[1;37m'
 SET='\033[0m'
-DATESUFFIX=$(date +%Y-%m-%d-%H%M) 
 
-STACKNAME=$(cat samconfig.toml | grep stack_name |  tr -d '"' | awk '{print $3}')
-AWSREGION=$(cat samconfig.toml | grep region |  tr -d '"' | awk '{print $3}')
+STACKNAME=$1
 
 if [ -z "$STACKNAME" ]; then
-    echo -e "${RED} Stack name could not be found at the samconfig.toml file ${RED}${SET} - Fail"
+    echo -e "${RED}Usage: $0 <stack-name> [aws-region]${SET}"
+    echo -e "${RED}  stack-name  : CloudFormation stack name (required)${SET}"
+    echo -e "${RED}  aws-region  : AWS region (optional, defaults to current CLI config)${SET}"
     exit 1
 fi
 
+if [ -n "$2" ]; then
+    AWSREGION=$2
+else
+    AWSREGION=$(aws configure get region)
+fi
+
 if [ -z "$AWSREGION" ]; then
-    echo -e "${RED} AWS Region could not be found at the samconfig.toml file ${RED}${SET} - Fail"
+    echo -e "${RED}AWS Region could not be determined. Pass it as the second argument or configure your AWS CLI.${SET}"
     exit 1
 fi
 

@@ -54,11 +54,9 @@ router.beforeEach(async (to) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!store.isAuthenticated) {
       try {
-        console.log("dispatch getSession");
         await store.getSession();
-        return to.fullPath;
+        // Session restored successfully, allow navigation to proceed
       } catch (err) {
-        //console.log("router beforeEach Error: " + err);
         return '/auth'
       }
     }

@@ -17,7 +17,12 @@ import { onMounted, onUnmounted } from "vue";
 import { storeToRefs } from 'pinia'
 import { fetchAuthSession } from 'aws-amplify/auth';
 import * as maplibregl from "maplibre-gl";
+import { setWorkerUrl } from "maplibre-gl";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { LocationClient, BatchGetDevicePositionCommand } from '@aws-sdk/client-location';
+
+// Required for maplibre-gl v6 with Vite bundler
+setWorkerUrl(maplibreWorkerUrl);
 import { useGeoStore } from "../stores/geo";
 import { ConsoleLogger } from 'aws-amplify/utils';
 import { withIdentityPoolId } from '@aws/amazon-location-utilities-auth-helper';
@@ -109,6 +114,13 @@ watch(routeSteps, (newSteps) => {
 
 async function subscribeToDeviceUpdates() {
   try {
+    // Ensure auth session is ready before making authenticated API calls
+    const session = await fetchAuthSession();
+    if (!session.tokens) {
+      logger.warn('No auth tokens available, skipping subscriptions');
+      return;
+    }
+
     // Get devices that are in route
     let devicesIds = await geoStore.fetchDevicesIdsInRoute();
     logger.info(`Subscribing to ${devicesIds.length} devices: ${devicesIds.join(', ')}`);
